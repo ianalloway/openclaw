@@ -194,8 +194,6 @@ const QA_WHATSAPP_AGENT_MESSAGE_ACTION_UPLOAD_PROMPT_RE =
   /upload-file action to send a PNG with caption\s+((?:WHATSAPP_QA_AGENT_UPLOAD|WHATSAPP_QA_GROUP_AGENT_UPLOAD)_[A-Z0-9]+)/i;
 const QA_WHATSAPP_PENDING_HISTORY_TRIGGER_MARKER_RE =
   /\bWHATSAPP_QA_PENDING_HISTORY_TRIGGER_([A-Z0-9]+)\b/u;
-const QA_WHATSAPP_PENDING_HISTORY_STRUCTURED_LABEL =
-  "Chat history since last reply (untrusted, for context):";
 const QA_WHATSAPP_BROADCAST_PROMPT_RE = /\bopenclawqa broadcast fanout check\s+([A-Z0-9_]+)\b/i;
 const QA_WHATSAPP_RUNTIME_AGENT_RE = /\bRuntime:\s*[^\n]*\bagent=([A-Za-z0-9_-]+)/i;
 const QA_WHATSAPP_ACTIVATION_ALWAYS_MARKER_RE = /\bWHATSAPP_QA_ACTIVATION_ALWAYS_([A-Z0-9]+)\b/u;
@@ -750,14 +748,19 @@ function extractAllRequestTexts(input: ResponsesInputItem[], body: Record<string
   return texts.join("\n");
 }
 
-function buildWhatsAppPendingHistoryReply(allInputText: string) {
-  const triggerMatch = QA_WHATSAPP_PENDING_HISTORY_TRIGGER_MARKER_RE.exec(allInputText);
+function buildWhatsAppPendingHistoryReply(prompt: string, input: ResponsesInputItem[]) {
+  const triggerMatch = QA_WHATSAPP_PENDING_HISTORY_TRIGGER_MARKER_RE.exec(prompt);
   if (!triggerMatch?.[1]) {
     return undefined;
   }
   const suffix = triggerMatch[1];
-  const beforeTrigger = allInputText.slice(0, triggerMatch.index);
-  const priorGroupContext = extractStructuredWhatsAppPendingHistoryContext(beforeTrigger);
+  // The current prompt is a separate item; only runtime carriers hold injected context.
+  // Per-run quiet markers therefore prove they came through that owner boundary.
+  const priorGroupContext = input
+    .filter((item) => item.role === "user" && Array.isArray(item.content))
+    .map((item) => extractInputText(item.content as unknown[]))
+    .filter((text) => isInternalRuntimeContextCarrierText(text))
+    .join("\n");
   const quietMarkerPattern = new RegExp(`\\bWHATSAPP_QA_PENDING_HISTORY_QUIET_${suffix}\\b`, "u");
   const contextSentinelPattern = new RegExp(
     `\\bWHATSAPP_QA_PENDING_HISTORY_CONTEXT_ONLY_${suffix}\\b`,
@@ -770,16 +773,6 @@ function buildWhatsAppPendingHistoryReply(allInputText: string) {
     return "WHATSAPP_QA_PENDING_HISTORY_MISSING_CONTEXT";
   }
   return `WHATSAPP_QA_PENDING_HISTORY_OK_${suffix}`;
-}
-
-function extractStructuredWhatsAppPendingHistoryContext(beforeTrigger: string) {
-  const blockRe = new RegExp(
-    `${escapeRegExp(QA_WHATSAPP_PENDING_HISTORY_STRUCTURED_LABEL)}\\n((?:(?!\\n\\n)[\\s\\S])+)\\n\\n`,
-    "gu",
-  );
-  return Array.from(beforeTrigger.matchAll(blockRe), (match) => match[1]?.trim())
-    .filter((block): block is string => Boolean(block))
-    .join("\n");
 }
 
 function buildWhatsAppBroadcastReply(allInputText: string) {
@@ -1196,15 +1189,21 @@ function extractWhatsAppStickerMarkerDirective(text: string) {
 }
 
 function shouldUseWhatsAppLocationMarker(prompt: string) {
-  return /(?:^|[\n:]\s*)📍\s*37\.774900,\s*-122\.419400\b/u.test(prompt.trim());
+  return /(?:^|[\n:])\s*📍\s*37\.774900,\s*-122\.419400\b|(?:^|\n)\s*\[[A-Z][a-z]{2} \d{4}-\d{2}-\d{2} \d{2}:\d{2} [A-Z]{2,5}\]\s*📍\s*37\.774900,\s*-122\.419400\b/u.test(
+    prompt,
+  );
 }
 
 function shouldUseWhatsAppContactMarker(prompt: string) {
-  return /(?:^|[\n:]\s*)<contacts?(?::|>)/iu.test(prompt.trim());
+  return /(?:^|[\n:])\s*<contacts?(?::|>)|(?:^|\n)\s*\[[A-Z][a-z]{2} \d{4}-\d{2}-\d{2} \d{2}:\d{2} [A-Z]{2,5}\]\s*<contacts?(?::|>)/iu.test(
+    prompt,
+  );
 }
 
 function shouldUseWhatsAppStickerMarker(prompt: string) {
-  return /(?:^|[\n:]\s*)<media:sticker>(?:\s|$)/iu.test(prompt.trim());
+  return /(?:^|[\n:])\s*<media:sticker>(?:\s|$)|(?:^|\n)\s*\[[A-Z][a-z]{2} \d{4}-\d{2}-\d{2} \d{2}:\d{2} [A-Z]{2,5}\]\s*<media:sticker>(?:\s|$)/iu.test(
+    prompt,
+  );
 }
 
 function extractLabeledMarkerDirective(text: string, label: string) {
@@ -2493,7 +2492,7 @@ async function buildResponsesPayload(
       },
     ]);
   }
-  const whatsAppPendingHistoryReply = buildWhatsAppPendingHistoryReply(allInputText);
+  const whatsAppPendingHistoryReply = buildWhatsAppPendingHistoryReply(prompt, input);
   if (whatsAppPendingHistoryReply) {
     return buildAssistantEvents(whatsAppPendingHistoryReply);
   }
