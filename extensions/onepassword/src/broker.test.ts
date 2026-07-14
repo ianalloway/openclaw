@@ -1,6 +1,11 @@
 import type { PluginHookBeforeToolCallResult } from "openclaw/plugin-sdk/types";
 import { describe, expect, it, vi } from "vitest";
-import { OnePasswordBroker, type AuditRow, type StandingGrant } from "./broker.js";
+import {
+  AUTHORIZATION_NONCE_PARAM,
+  OnePasswordBroker,
+  type AuditRow,
+  type StandingGrant,
+} from "./broker.js";
 import type { OnePasswordConfig, OnePasswordItemConfig } from "./config.js";
 import { MemoryKeyedStore } from "./memory-store.test-support.js";
 
@@ -90,6 +95,11 @@ async function before(
   );
 }
 
+function nonceOf(result: PluginHookBeforeToolCallResult | void): string | undefined {
+  const nonce = result?.params?.[AUTHORIZATION_NONCE_PARAM];
+  return typeof nonce === "string" ? nonce : undefined;
+}
+
 describe("OnePasswordBroker validation and policy", () => {
   it("lists only registry metadata and active grant state", async () => {
     const { broker, getItem } = setup();
@@ -103,6 +113,7 @@ describe("OnePasswordBroker validation and policy", () => {
       "list-grant",
       { action: "get", slug: "approval", reason: "create listing fixture" },
       invocation,
+      nonceOf(approval),
     );
     getItem.mockClear();
 
@@ -174,11 +185,19 @@ describe("OnePasswordBroker validation and policy", () => {
 
   it("allows auto, blocks deny, and audits one row per attempt", async () => {
     const { broker, audit, getItem } = setup();
-    expect(
-      await before(broker, "auto-1", { action: "get", slug: "automatic", reason: "test" }),
-    ).toBeUndefined();
+    const automatic = await before(broker, "auto-1", {
+      action: "get",
+      slug: "automatic",
+      reason: "test",
+    });
+    expect(automatic?.requireApproval).toBeUndefined();
     await expect(
-      broker.get("auto-1", { action: "get", slug: "automatic", reason: "test" }, invocation),
+      broker.get(
+        "auto-1",
+        { action: "get", slug: "automatic", reason: "test" },
+        invocation,
+        nonceOf(automatic),
+      ),
     ).resolves.toMatchObject({ value: ["fixture", "value"].join("-") });
     expect(
       await before(broker, "deny-1", { action: "get", slug: "blocked", reason: "test" }),
@@ -209,6 +228,7 @@ describe("OnePasswordBroker validation and policy", () => {
       "approve-1",
       { action: "get", slug: "approval", reason: "one use" },
       invocation,
+      nonceOf(approved),
     );
 
     const denied = await before(broker, "approve-2", {
@@ -235,11 +255,10 @@ describe("OnePasswordBroker validation and policy", () => {
   it("authorizes when hook and execute contexts disagree on session fields", async () => {
     // Production regression: the hook's PluginHookToolContext and the tool
     // execute invocation context are sourced independently by core and can
-    // carry different session fields for the same call. Only toolCallId is
-    // guaranteed to match; a tuple key over session fields caused live
-    // POLICY_NOT_EVALUATED failures.
+    // carry different session fields for the same call. Correlation is
+    // nonce-based so those differences cannot cause POLICY_NOT_EVALUATED.
     const { broker, audit } = setup();
-    await broker.beforeToolCall(
+    const result = await broker.beforeToolCall(
       {
         toolName: "onepassword",
         params: { action: "get", slug: "automatic", reason: "asymmetric contexts" },
@@ -258,10 +277,99 @@ describe("OnePasswordBroker validation and policy", () => {
         "call_x|fc_y",
         { action: "get", slug: "automatic", reason: "asymmetric contexts" },
         { agentId: "main", sessionKey: "agent:main:main" },
+        nonceOf(result),
       ),
     ).resolves.toMatchObject({ slug: "automatic" });
     const rows = await audit.entries();
     expect(rows.map((entry) => entry.value.outcome)).toEqual(["auto"]);
+  });
+
+  it("isolates concurrent sessions that reuse a provider tool call id", async () => {
+    const { broker, audit } = setup();
+    const firstInvocation = {
+      agentId: "agent-a",
+      sessionKey: "session-a",
+      sessionId: "conversation-a",
+    };
+    const secondInvocation = {
+      agentId: "agent-b",
+      sessionKey: "session-b",
+      sessionId: "conversation-b",
+    };
+    const first = await broker.beforeToolCall(
+      {
+        toolName: "onepassword",
+        toolCallId: "call-1",
+        params: { action: "get", slug: "automatic", reason: "first session" },
+      },
+      { toolName: "onepassword", toolCallId: "call-1", ...firstInvocation },
+    );
+    const second = await broker.beforeToolCall(
+      {
+        toolName: "onepassword",
+        toolCallId: "call-1",
+        params: { action: "get", slug: "automatic", reason: "second session" },
+      },
+      { toolName: "onepassword", toolCallId: "call-1", ...secondInvocation },
+    );
+
+    await expect(
+      broker.get(
+        "call-1",
+        { action: "get", slug: "automatic", reason: "first session" },
+        firstInvocation,
+        nonceOf(first),
+      ),
+    ).resolves.toMatchObject({ slug: "automatic" });
+    await expect(
+      broker.get(
+        "call-1",
+        { action: "get", slug: "automatic", reason: "second session" },
+        secondInvocation,
+        nonceOf(second),
+      ),
+    ).resolves.toMatchObject({ slug: "automatic" });
+    expect(
+      (await audit.entries())
+        .map((entry) => ({
+          reason: entry.value.reason,
+          sessionKey: entry.value.sessionKey,
+        }))
+        .toSorted((left, right) => left.sessionKey.localeCompare(right.sessionKey)),
+    ).toEqual([
+      { reason: "first session", sessionKey: "session-a" },
+      { reason: "second session", sessionKey: "session-b" },
+    ]);
+  });
+
+  it("never honors a model-supplied authorization nonce", async () => {
+    const { broker } = setup();
+    const result = await before(broker, "call-1", {
+      action: "get",
+      slug: "automatic",
+      reason: "reject forged correlation",
+      [AUTHORIZATION_NONCE_PARAM]: "attacker-nonce",
+    });
+    const issuedNonce = nonceOf(result);
+    expect(issuedNonce).toBeDefined();
+    expect(issuedNonce).not.toBe("attacker-nonce");
+
+    await expect(
+      broker.get(
+        "call-1",
+        { action: "get", slug: "automatic", reason: "reject forged correlation" },
+        invocation,
+        "attacker-nonce",
+      ),
+    ).rejects.toMatchObject({ code: "POLICY_NOT_EVALUATED" });
+    await expect(
+      broker.get(
+        "call-1",
+        { action: "get", slug: "automatic", reason: "reject forged correlation" },
+        invocation,
+        issuedNonce,
+      ),
+    ).resolves.toMatchObject({ slug: "automatic" });
   });
 
   it("persists allow-always grants and expires them", async () => {
@@ -280,6 +388,7 @@ describe("OnePasswordBroker validation and policy", () => {
         reason: "standing access",
       },
       invocation,
+      nonceOf(first),
     );
     expect((await grants.entries()).map((entry) => entry.value.agentId)).toEqual(["agent-a"]);
 
@@ -289,11 +398,12 @@ describe("OnePasswordBroker validation and policy", () => {
       slug: "approval",
       reason: "second access",
     });
-    expect(second).toBeUndefined();
+    expect(second?.requireApproval).toBeUndefined();
     await broker.get(
       "grant-2",
       { action: "get", slug: "approval", reason: "second access" },
       invocation,
+      nonceOf(second),
     );
     expect(getItem).toHaveBeenCalledTimes(2);
 
@@ -322,6 +432,7 @@ describe("OnePasswordBroker validation and policy", () => {
       "agent-grant-1",
       { action: "get", slug: "approval", reason: "agent a access" },
       invocation,
+      nonceOf(approved),
     );
 
     const otherAgent = {
@@ -372,6 +483,7 @@ describe("OnePasswordBroker validation and policy", () => {
       "grant-remap-1",
       { action: "get", slug: "approval", reason: "approve original target" },
       invocation,
+      nonceOf(first),
     );
 
     configuredItem(configured, "approval").item = "Replacement target";
@@ -386,7 +498,7 @@ describe("OnePasswordBroker validation and policy", () => {
   it("fails closed when live policy changes after authorization", async () => {
     const configured = config();
     const { broker, audit, getItem, setConfig } = setup(1_000, configured);
-    await before(broker, "live-deny-1", {
+    const authorized = await before(broker, "live-deny-1", {
       action: "get",
       slug: "automatic",
       reason: "authorized before reload",
@@ -400,6 +512,7 @@ describe("OnePasswordBroker validation and policy", () => {
         "live-deny-1",
         { action: "get", slug: "automatic", reason: "authorized before reload" },
         invocation,
+        nonceOf(authorized),
       ),
     ).rejects.toMatchObject({ code: "POLICY_CHANGED" });
     expect(getItem).not.toHaveBeenCalled();
@@ -411,7 +524,7 @@ describe("OnePasswordBroker validation and policy", () => {
   it("rejects a retargeted authorization and never reuses its cached value", async () => {
     const configured = config();
     const { broker, getItem, setConfig } = setup(1_000, configured);
-    await before(broker, "live-target-1", {
+    const primed = await before(broker, "live-target-1", {
       action: "get",
       slug: "automatic",
       reason: "prime original target",
@@ -420,9 +533,10 @@ describe("OnePasswordBroker validation and policy", () => {
       "live-target-1",
       { action: "get", slug: "automatic", reason: "prime original target" },
       invocation,
+      nonceOf(primed),
     );
 
-    await before(broker, "live-target-2", {
+    const authorized = await before(broker, "live-target-2", {
       action: "get",
       slug: "automatic",
       reason: "authorized before retarget",
@@ -435,10 +549,11 @@ describe("OnePasswordBroker validation and policy", () => {
         "live-target-2",
         { action: "get", slug: "automatic", reason: "authorized before retarget" },
         invocation,
+        nonceOf(authorized),
       ),
     ).rejects.toMatchObject({ code: "POLICY_CHANGED" });
 
-    await before(broker, "live-target-3", {
+    const replacement = await before(broker, "live-target-3", {
       action: "get",
       slug: "automatic",
       reason: "authorize replacement target",
@@ -447,6 +562,7 @@ describe("OnePasswordBroker validation and policy", () => {
       "live-target-3",
       { action: "get", slug: "automatic", reason: "authorize replacement target" },
       invocation,
+      nonceOf(replacement),
     );
     expect(getItem).toHaveBeenCalledTimes(2);
     expect(getItem).toHaveBeenLastCalledWith(
@@ -492,6 +608,7 @@ describe("OnePasswordBroker validation and policy", () => {
       "grant-prune-1",
       { action: "get", slug: "approval", reason: "replace removed grants" },
       invocation,
+      nonceOf(approval),
     );
     expect((await grants.entries()).map((entry) => entry.value.slug)).toEqual(["approval"]);
   });
@@ -514,6 +631,7 @@ describe("OnePasswordBroker validation and policy", () => {
         reason: "create grant",
       },
       invocation,
+      nonceOf(first),
     );
 
     const second = await before(broker, "grant-cache-2", {
@@ -521,7 +639,7 @@ describe("OnePasswordBroker validation and policy", () => {
       slug: "approval",
       reason: "use grant",
     });
-    expect(second).toBeUndefined();
+    expect(second?.requireApproval).toBeUndefined();
     advance(3_601);
     await expect(
       broker.get(
@@ -532,6 +650,7 @@ describe("OnePasswordBroker validation and policy", () => {
           reason: "use grant",
         },
         invocation,
+        nonceOf(second),
       ),
     ).rejects.toMatchObject({ code: "GRANT_EXPIRED" });
     expect(getItem).toHaveBeenCalledTimes(1);
@@ -549,13 +668,27 @@ describe("OnePasswordBroker cache and audit", () => {
       ["cache-1", "first"],
       ["cache-2", "second"],
     ] as const) {
-      await before(broker, id, { action: "get", slug: "automatic", reason });
-      await broker.get(id, { action: "get", slug: "automatic", reason }, invocation);
+      const result = await before(broker, id, { action: "get", slug: "automatic", reason });
+      await broker.get(
+        id,
+        { action: "get", slug: "automatic", reason },
+        invocation,
+        nonceOf(result),
+      );
     }
     expect(getItem).toHaveBeenCalledTimes(1);
     advance(300_001);
-    await before(broker, "cache-3", { action: "get", slug: "automatic", reason: "third" });
-    await broker.get("cache-3", { action: "get", slug: "automatic", reason: "third" }, invocation);
+    const third = await before(broker, "cache-3", {
+      action: "get",
+      slug: "automatic",
+      reason: "third",
+    });
+    await broker.get(
+      "cache-3",
+      { action: "get", slug: "automatic", reason: "third" },
+      invocation,
+      nonceOf(third),
+    );
     expect(getItem).toHaveBeenCalledTimes(2);
     expect((await audit.entries()).map((entry) => entry.value.outcome)).toEqual([
       "auto",
@@ -578,7 +711,7 @@ describe("OnePasswordBroker cache and audit", () => {
       opClient: { getItem },
       stores: { audit, grants },
     });
-    await before(broker, "deny-cache-1", {
+    const primed = await before(broker, "deny-cache-1", {
       action: "get",
       slug: "automatic",
       reason: "prime cache",
@@ -591,6 +724,7 @@ describe("OnePasswordBroker cache and audit", () => {
         reason: "prime cache",
       },
       invocation,
+      nonceOf(primed),
     );
     const automatic = cfg.items.automatic;
     if (!automatic) {
