@@ -77,7 +77,11 @@ it.each([
       },
       fetch: fetchMock,
       setTimeout: setTimeoutMock,
-      window: { location: new URL("https://123456.discordsays.com") },
+      window: {
+        location: new URL("https://123456.discordsays.com"),
+        parent: { opener: null },
+        addEventListener: vi.fn(),
+      },
     },
   );
 
@@ -90,4 +94,33 @@ it.each([
   expect(setTimeoutMock).toHaveBeenCalledTimes(expectedRequestCount);
   expect(setTimeoutMock).toHaveBeenLastCalledWith(expect.any(Function), timeoutMs);
   expect(clearTimeoutMock).toHaveBeenCalledTimes(expectedRequestCount);
+});
+
+it.each(["parent", "popout"] as const)("only delivers messages from the %s RPC window", (mode) => {
+  const opener = mode === "popout" ? {} : null;
+  const parent = { opener };
+  const addEventListener =
+    vi.fn<(name: string, listener: (event: MessageEvent) => void, capture: boolean) => void>();
+  const ready = vi.fn(() => new Promise<void>(() => {}));
+  const DiscordSDK = class {
+    ready = ready;
+    constructor() {
+      expect(addEventListener).toHaveBeenCalledWith("message", expect.any(Function), true);
+    }
+  };
+  runInNewContext(DISCORD_ACTIVITY_SHELL_JS.replace(/^import[^\n]+\n/, ""), {
+    document: { querySelector: () => new TestElement() },
+    window: { location: new URL("https://123456.discordsays.com"), parent, addEventListener },
+    DiscordSDK,
+  });
+  expect(ready).toHaveBeenCalledOnce();
+  const listener = addEventListener.mock.calls[0][1];
+  const stopImmediatePropagation = vi.fn();
+  listener({ source: opener ?? parent, stopImmediatePropagation } as unknown as MessageEvent);
+  expect(stopImmediatePropagation).not.toHaveBeenCalled();
+  for (const source of [{}, null]) {
+    stopImmediatePropagation.mockClear();
+    listener({ source, stopImmediatePropagation } as unknown as MessageEvent);
+    expect(stopImmediatePropagation).toHaveBeenCalledOnce();
+  }
 });

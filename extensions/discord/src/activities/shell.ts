@@ -82,6 +82,11 @@ async function run() {
     return;
   }
   const clientId = match[1];
+  // Only Discord's RPC window may deliver SDK messages. Sandboxed widgets also have an opaque origin.
+  const rpcWindow = window.parent.opener ?? window.parent;
+  window.addEventListener("message", (event) => {
+    if (event.source !== rpcWindow) event.stopImmediatePropagation();
+  }, true);
   const sdk = new DiscordSDK(clientId);
   await sdk.ready();
   const { code } = await sdk.commands.authorize({
