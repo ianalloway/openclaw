@@ -1,4 +1,4 @@
-import { createEffect, createMemo, createSignal, onSettled } from "solid-js";
+import { untrack, createEffect, createMemo, createSignal, onSettled } from "solid-js";
 import {
   isStaleChunkImportError,
   retryControlUiImport,
@@ -174,14 +174,16 @@ export function useMenuMachine(
   };
   onSettled(() => {
     mounted = true;
-    const stopOpen = overlay.subscribe((open) => {
-      notify();
-      if (open) {
-        void load();
-      } else {
-        pending = [];
-      }
-    });
+    const stopOpen = overlay.subscribe((open) =>
+      untrack(() => {
+        notify();
+        if (open) {
+          void load();
+        } else {
+          pending = [];
+        }
+      }),
+    );
     if (overlay.open || parentRuntime()) {
       void load();
     }

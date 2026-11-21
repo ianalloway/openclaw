@@ -1,5 +1,6 @@
 import { dynamic, type JSX } from "@solidjs/web";
 import {
+  untrack,
   createMemo,
   createProjection,
   createSignal,
@@ -133,7 +134,7 @@ function renderRecentSessionRow(params: RecentSessionParams) {
   const subtitle = createMemo(() => subtitleState().subtitle),
     narration = createMemo(() => subtitleState().narration),
     toolName = createMemo(() => subtitleState().toolName);
-  const indicators = renderSidebarSessionIndicators(host, session, display, icon);
+  const indicators = untrack(() => renderSidebarSessionIndicators(host, session, display, icon));
   const { running, stateId, metaId, pullRequest, childrenExpanded } = indicators;
   const controls: CatalogRowControls = {};
   const openMenuFromEvent: JSX.EventHandler<HTMLDivElement, MouseEvent | KeyboardEvent> = (
@@ -142,11 +143,13 @@ function renderRecentSessionRow(params: RecentSessionParams) {
     if (event.target instanceof HTMLInputElement) {
       return;
     }
-    handleContextMenuEvent(event, controls.link ?? null, (trigger, x, y) => {
-      if (!host().sidebarSnapshot) {
-        host().sidebarMenus.openSessionMenu(actionSession(), x, y, trigger);
-      }
-    });
+    handleContextMenuEvent(event, controls.link ?? null, (trigger, x, y) =>
+      untrack(() => {
+        if (!host().sidebarSnapshot) {
+          host().sidebarMenus.openSessionMenu(actionSession(), x, y, trigger);
+        }
+      }),
+    );
   };
   const pinLabel = createMemo(() => {
     return t(personallyPinned() ? "sessionsView.unpinSession" : "sessionsView.pinSession");

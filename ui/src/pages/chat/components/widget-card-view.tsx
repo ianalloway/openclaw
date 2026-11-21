@@ -278,11 +278,13 @@ function WidgetFrame(props: {
   const Frame = () => {
     let element!: HTMLIFrameElement;
     onSettled(() => {
-      widgetFramePromptActive.set(element, () => props.promptAllowed());
-      widgetFrameResize.set(element, (nextHeight) => {
-        const appliedHeight = props.params.onHeightChange?.(nextHeight, true) ?? nextHeight;
-        setReportedHeight(appliedHeight);
-      });
+      widgetFramePromptActive.set(element, () => untrack(() => props.promptAllowed()));
+      widgetFrameResize.set(element, (nextHeight) =>
+        untrack(() => {
+          const appliedHeight = props.params.onHeightChange?.(nextHeight, true) ?? nextHeight;
+          setReportedHeight(appliedHeight);
+        }),
+      );
       const releaseTheme = registerWidgetThemeFrame(element, "*");
       props.onFrame(element);
       return () => {

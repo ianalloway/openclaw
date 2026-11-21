@@ -132,16 +132,16 @@ it("retains inspection retry focus and uses the current error and callback", asy
   const firstRetry = vi.fn();
   const nextRetry = vi.fn();
   let replace!: () => void;
-  const { container } = mount({}, (props) => {
+  const { container } = mount({}, (fixture) => {
     const [failure, setFailure] = createSignal(new Error("Inspection unavailable"));
     const [retry, setRetry] = createSignal<() => void>(() => firstRetry);
-    props.inspectionRead = {
+    fixture.inspectionRead = {
       receipt: () => null,
       value: () => {
         throw failure();
       },
     };
-    Object.defineProperty(props, "onRetryInspection", { get: retry });
+    Object.defineProperty(fixture, "onRetryInspection", { get: retry });
     replace = () => {
       setFailure(new Error("Inspection still unavailable"));
       setRetry(() => nextRetry);
