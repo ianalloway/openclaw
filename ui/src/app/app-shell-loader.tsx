@@ -1,5 +1,5 @@
 import type { JSX as SolidJSX } from "@solidjs/web";
-import { Errored, Loading, lazy, onSettled } from "solid-js";
+import { untrack, Errored, Loading, lazy, onSettled } from "solid-js";
 import { LazyViewError } from "../components/solid/lazy-view-error.tsx";
 import { ConnectingSplash } from "../components/solid/loading-skeleton.tsx";
 import { yieldAfterLayout } from "../lib/layout-frame.ts";
@@ -20,7 +20,7 @@ export function ShellLoader(props: ShellLoaderProps): SolidJSX.Element {
   const LazyShell = lazy(
     async () => {
       const shell = await import("./app-host.tsx");
-      if (!props.runtime.warmBoot) {
+      if (!untrack(() => props.runtime.warmBoot)) {
         await yieldAfterLayout();
       }
       return { OpenClawShell: shell.OpenClawShell };

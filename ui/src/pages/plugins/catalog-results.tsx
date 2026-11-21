@@ -1,5 +1,5 @@
 import type { JSX } from "@solidjs/web";
-import { createMemo, Errored, For, latest, Loading, Repeat, Reveal } from "solid-js";
+import { untrack, createMemo, Errored, For, latest, Loading, Repeat, Reveal } from "solid-js";
 import { comparePluginCatalogEntries } from "../../../../packages/plugin-package-contract/src/catalog-order.js";
 import {
   CatalogDiscoveryChip,
@@ -641,10 +641,12 @@ export function renderPluginCatalogResults(props: PluginCatalogResultsProps): JS
             {connected() && (
               <Errored
                 fallback={(error, reset) =>
-                  renderError(formatUiError(error()), () => {
-                    props.onRetry();
-                    reset();
-                  })
+                  renderError(formatUiError(error()), () =>
+                    untrack(() => {
+                      props.onRetry();
+                      reset();
+                    }),
+                  )
                 }
               >
                 {readCatalog()}

@@ -1,6 +1,6 @@
 import { parseDateStringTimestampMs } from "@openclaw/normalization-core/number-coercion";
 import type { JSX } from "@solidjs/web";
-import { createMemo, createUniqueId, For, Show } from "solid-js";
+import { untrack, createMemo, createUniqueId, For, Show } from "solid-js";
 import { IconButton } from "../../../components/solid/icon-button.tsx";
 import { Icon } from "../../../components/solid/icon.tsx";
 import { InlineAlert } from "../../../components/solid/inline-alert.tsx";
@@ -393,7 +393,7 @@ function ReviewRow(props: {
         aria-controls={panelId()}
         onClick={() => {
           props.owner.onViewStateChange((draft) => {
-            draft.openReviewPanel = open() ? null : props.panel;
+            draft.openReviewPanel = untrack(() => (open() ? null : props.panel));
           });
         }}
       >

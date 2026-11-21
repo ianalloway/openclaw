@@ -3,7 +3,7 @@
 // config form draft so the embedded schema editor below stays in sync.
 import type { TalkCatalogResult } from "@openclaw/gateway-protocol";
 import type { JSX } from "@solidjs/web";
-import { action, createMemo, createOptimistic, createSignal, onSettled } from "solid-js";
+import { untrack, action, createMemo, createOptimistic, createSignal, onSettled } from "solid-js";
 import { createDeferredCore, type Deferred } from "../../../../src/shared/deferred.js";
 import { GatewayRequestError } from "../../api/gateway-connect-errors.ts";
 import type { ApplicationContext } from "../../app/context.ts";
@@ -657,7 +657,9 @@ function createTalkSettings(context: ApplicationContext, props: TalkSettingsPage
   onSettled(() => {
     const stops = [
       // Retire catalog reads on every connection transition, even within one render.
-      context.gateway.subscribe(() => syncCatalog(catalogConnection(context.gateway))),
+      context.gateway.subscribe(() =>
+        untrack(() => syncCatalog(catalogConnection(context.gateway))),
+      ),
       // Config receipts acknowledge model resets and admit a fresh catalog read.
       context.runtimeConfig.subscribe(() =>
         refreshCatalogOnConfigChange(context.runtimeConfig.state),
