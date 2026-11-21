@@ -248,7 +248,7 @@ const mountXReplies: ControlUiView = (container, initialContext) => {
                           })
                         }
                       >
-                        <span class="x-replies__switch-track" aria-hidden="true"></span>
+                        <span class="x-replies__switch-track" aria-hidden="true" />
                         <span>{currentSnapshot().guests.enabled ? "On" : "Off"}</span>
                       </button>
                     </div>

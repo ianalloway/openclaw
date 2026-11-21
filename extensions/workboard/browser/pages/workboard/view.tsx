@@ -39,6 +39,7 @@ import {
   formatPriorityLabel,
   workboardErrorMessage,
   workboardMutationContext,
+  readWorkboardViewState,
   workboardViewState,
   PriorityIcon,
   dispatchSummaryMessage,
@@ -57,7 +58,7 @@ const WORKBOARD_RECENT_DONE_WINDOW_MS = 7 * 24 * 60 * 60 * 1000;
 const workboardFilterPopoverId = "workboard-filter-popover";
 
 function AgentControl(props: { workboard: WorkboardProps; options: WorkboardSelectOption[] }) {
-  const state = workboardViewState(() => props.workboard);
+  const state = () => readWorkboardViewState(props.workboard);
   return (
     <>
       {props.workboard.scopeControl ? (
@@ -87,7 +88,7 @@ function WorkboardColumns(props: {
   cardRefs: ReturnType<typeof createElementRefs<HTMLElement>>;
   menuCardId?: string;
 }) {
-  const state = workboardViewState(() => props.workboard);
+  const state = () => readWorkboardViewState(props.workboard);
   const boardEdges = boardScrollEdgesRef();
   return (
     <div

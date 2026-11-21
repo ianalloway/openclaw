@@ -29,7 +29,7 @@ export function ElapsedTime(props: {
         );
   });
   return (
-    <openclaw-elapsed-time class={props.class} style="display: contents">
+    <openclaw-elapsed-time class={props.class} style={{ display: "contents" }}>
       {label()}
     </openclaw-elapsed-time>
   );

@@ -1,5 +1,5 @@
 import type { JSX } from "@solidjs/web";
-import { omit } from "solid-js";
+import { omit, Show } from "solid-js";
 import { Icon, type IconName } from "./icon.tsx";
 import "../tooltip.ts";
 
@@ -70,9 +70,9 @@ export function IconButton(props: IconButtonProps) {
       {typeof props.icon === "string" ? <Icon name={props.icon} /> : props.icon}
     </button>
   );
-  return props.tooltip === false ? (
-    button
-  ) : (
-    <openclaw-tooltip prop:content={props.tooltip || props.label}>{button}</openclaw-tooltip>
+  return (
+    <Show when={props.tooltip !== false} fallback={button}>
+      <openclaw-tooltip prop:content={props.tooltip || props.label}>{button}</openclaw-tooltip>
+    </Show>
   );
 }

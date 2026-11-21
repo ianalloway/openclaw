@@ -3,7 +3,7 @@ import { createMemo, createSignal, For, Show } from "solid-js";
 import { t } from "../../i18n/index.ts";
 import { matchesAgentScope } from "./agent-filter.ts";
 import { matchesBoardFilter } from "./board-filter.ts";
-import { workboardViewState, type WorkboardProps } from "./view-helpers.tsx";
+import { readWorkboardViewState, type WorkboardProps } from "./view-helpers.tsx";
 
 export function LabelChoices(props: {
   owner: WorkboardProps;
@@ -14,7 +14,7 @@ export function LabelChoices(props: {
   limit?: number;
   inputRef?: (input: HTMLInputElement) => void;
 }) {
-  const state = workboardViewState(() => props.owner);
+  const state = () => readWorkboardViewState(props.owner);
   const [query, setQuery] = createSignal("");
   const options = createMemo(() => {
     const labels = new Set(props.value);

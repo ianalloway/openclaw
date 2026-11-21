@@ -64,7 +64,7 @@ export function WikiPreviewOverlay(props: DreamingProps) {
         return (
           <openclaw-modal-dialog
             label={current().page.title || t("dreaming.wiki.previewFallbackTitle")}
-            style="--openclaw-modal-width: 1120px"
+            style={{ "--openclaw-modal-width": "1120px" }}
             onModal-cancel={() => props.onCloseWikiPreview()}
           >
             <div class="dreams-diary__preview-panel">

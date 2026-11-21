@@ -20,7 +20,7 @@ import {
   StartExecutionButton,
 } from "./view-card-actions.tsx";
 import { openCardDetails, workboardCardDetailDrawerId } from "./view-card-details.tsx";
-import { workboardViewState, type WorkboardProps } from "./view-helpers.tsx";
+import { readWorkboardViewState, type WorkboardProps } from "./view-helpers.tsx";
 import { closeWorkboardPopoverOnAction, workboardPopoverRef } from "./view-popover.ts";
 
 export function equalCardActions(
@@ -135,7 +135,7 @@ export function WorkboardCardMenus(props: {
 }
 
 function CardMenuContent(props: { workboard: WorkboardProps; card: WorkboardCard }) {
-  const state = workboardViewState(() => props.workboard);
+  const state = () => readWorkboardViewState(props.workboard);
   const action = createMemo(
     () => {
       state();

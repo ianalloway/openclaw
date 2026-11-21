@@ -230,6 +230,16 @@ const SPOT_ZONES = { left: [12, 38], right: [60, 84] } as const;
 // --lob-glint-seed instead of --lob-glint so the class-driven palette and
 // offline overrides in lobster-pet.css still out-cascade it.
 export function lobsterLookStyle(look: LobsterPetLook): string {
+  return lobsterCssText(lobsterLookProperties(look));
+}
+
+export function lobsterCssText(properties: Readonly<Record<string, string>>): string {
+  return Object.entries(properties)
+    .map(([property, value]) => `${property}:${value}`)
+    .join(";");
+}
+
+export function lobsterLookProperties(look: LobsterPetLook): Record<string, string> {
   const crusher = look.crusherSide;
   const paletteHash = fnv1aUtf16(look.palette.id);
   const breatheDelayS = ((paletteHash >>> 8) % 34) / 10;
@@ -243,20 +253,20 @@ export function lobsterLookStyle(look: LobsterPetLook): string {
       : crusher === side
         ? LOBSTER_PET_CLAW_MULS.mighty
         : LOBSTER_PET_CLAW_MULS.dainty;
-  return [
-    `--lob-shell:${look.chimeraParts?.body ?? look.palette.shell}`,
-    `--lob-claw:${bodyDonorClaw ?? look.palette.claw}`,
-    `--lob-blink-delay:${look.blinkDelayS}s`,
-    `--lob-breathe-delay:-${breatheDelayS}s`,
-    `--lob-claw-l:${clawMul("left")}`,
-    `--lob-claw-r:${clawMul("right")}`,
-    ...(look.chimeraParts
-      ? [
-          `--lob-chimera-l:${look.chimeraParts.clawLeft}`,
-          `--lob-chimera-r:${look.chimeraParts.clawRight}`,
-          `--lob-antennae-color:${look.chimeraParts.antennae}`,
-        ]
-      : []),
-    ...(look.glint ? [`--lob-glint-seed:${look.glint}`] : []),
-  ].join(";");
+  return {
+    "--lob-shell": chimeraParts?.body ?? look.palette.shell,
+    "--lob-claw": bodyDonorClaw ?? look.palette.claw,
+    "--lob-blink-delay": `${look.blinkDelayS}s`,
+    "--lob-breathe-delay": `-${breatheDelayS}s`,
+    "--lob-claw-l": String(clawMul("left")),
+    "--lob-claw-r": String(clawMul("right")),
+    ...(chimeraParts
+      ? {
+          "--lob-chimera-l": chimeraParts.clawLeft,
+          "--lob-chimera-r": chimeraParts.clawRight,
+          "--lob-antennae-color": chimeraParts.antennae,
+        }
+      : {}),
+    ...(look.glint ? { "--lob-glint-seed": String(look.glint) } : {}),
+  };
 }

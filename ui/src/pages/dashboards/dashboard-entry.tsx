@@ -172,6 +172,8 @@ export function DashboardEntry(props: DashboardEntryProps) {
   const title = createMemo(() => resolveSessionDisplayName(props.row.key, props.row));
   const running = () => props.row.status === "running";
   const prefix = () => (props.variant === "row" ? "dashboard-row" : "dashboard-card");
+  const mainClass = () =>
+    props.variant === "row" ? "dashboard-row__main" : "dashboard-card__main";
   let entry!: HTMLElement;
   const preview = () => (
     <DashboardPreview
@@ -262,7 +264,7 @@ export function DashboardEntry(props: DashboardEntryProps) {
       <Show
         when={target()}
         fallback={
-          <div class={`${prefix()}__main`} ref={(element) => props.contentRef?.(element)}>
+          <div class={mainClass()} ref={(element) => props.contentRef?.(element)}>
             <Content />
           </div>
         }
@@ -270,7 +272,7 @@ export function DashboardEntry(props: DashboardEntryProps) {
         {(destination) => (
           <a
             ref={(element) => props.contentRef?.(element)}
-            class={`${prefix()}__main`}
+            class={mainClass()}
             href={destination().href}
             aria-label={title()}
             onClick={(event: MouseEvent) => {

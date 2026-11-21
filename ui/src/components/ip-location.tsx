@@ -37,7 +37,7 @@ export function IpLocation(props: { ip?: string }) {
   const label = () =>
     [location()?.city, location()?.region ?? location()?.country].filter(Boolean).join(", ");
   return (
-    <openclaw-ip-location ref={(element) => (host = element)} style="display: contents">
+    <openclaw-ip-location ref={(element) => (host = element)} style={{ display: "contents" }}>
       <Loading on={ip()} fallback={null}>
         <Show when={label()}>
           <span class="activity-feed__device-location">

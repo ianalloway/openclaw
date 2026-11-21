@@ -226,7 +226,7 @@ function TypeMenu(props: SidebarRegionHeaderProps) {
           content: (
             <span
               ref={createTextOverflow(() => current().label)}
-              style="display:block;overflow:hidden"
+              style={{ display: "block", overflow: "hidden" }}
               title={current().label}
             >
               {current().label}
@@ -498,6 +498,14 @@ export function SidebarRegionHeader(props: SidebarRegionHeaderProps) {
     await settle();
     return !hasPanel(panel.id);
   }
+  async function handleCloseTab(id: string) {
+    const scopeKey = props.mobileHost?.scopeKey;
+    if (closing() || !(await closeTab(id))) {
+      return;
+    }
+    closeEmptyMobileHost(props, scopeKey);
+  }
+
   async function closeAll() {
     const view = closeScope();
     if (activeClose?.current() || !view.current() || !props.callbacks?.newTab) {
@@ -620,13 +628,7 @@ export function SidebarRegionHeader(props: SidebarRegionHeaderProps) {
               props.callbacks?.activatePanel(id);
             }
           }}
-          onClose={async (id) => {
-            const scopeKey = props.mobileHost?.scopeKey;
-            if (closing() || !(await closeTab(id))) {
-              return;
-            }
-            closeEmptyMobileHost(props, scopeKey);
-          }}
+          onClose={handleCloseTab}
           onNew={() => undefined}
           newLabel={t("chat.sidePanel.addTab")}
           newControl={null}

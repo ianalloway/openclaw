@@ -35,6 +35,7 @@ import {
   formatPriorityLabel,
   workboardErrorMessage,
   workboardMutationContext,
+  readWorkboardViewState,
   workboardViewState,
   renderPriorityIcon,
   formatStatusLabel,
@@ -446,7 +447,7 @@ export function SelectionDialog(props: { workboard: WorkboardProps }) {
   );
 }
 function SelectionDialogContent(props: { workboard: WorkboardProps; draft: WorkboardBulkDialog }) {
-  const state = workboardViewState(() => props.workboard);
+  const state = () => readWorkboardViewState(props.workboard);
   const draft = () => {
     void props.workboard.revision;
     return props.draft;
@@ -506,7 +507,7 @@ function SelectionDialogContent(props: { workboard: WorkboardProps; draft: Workb
   return (
     <Dialog
       label={title()}
-      style="--openclaw-modal-width: 460px; --openclaw-modal-backdrop-filter: none;"
+      style={{ "--openclaw-modal-width": "460px", "--openclaw-modal-backdrop-filter": "none" }}
       onCancel={close}
     >
       <form

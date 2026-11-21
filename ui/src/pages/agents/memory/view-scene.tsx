@@ -43,14 +43,14 @@ export function DreamingScene(props: DreamingProps) {
         {(s) => (
           <div
             class="dreams__star"
-            style={`
-              top: ${s.top}%;
-              left: ${s.left}%;
-              width: ${s.size}px;
-              height: ${s.size}px;
-              background: ${s.hue === "accent" ? "var(--accent-muted)" : "var(--text)"};
-              animation-delay: ${s.delay}s;
-            `}
+            style={{
+              top: `${s.top}%`,
+              left: `${s.left}%`,
+              width: `${s.size}px`,
+              height: `${s.size}px`,
+              background: s.hue === "accent" ? "var(--accent-muted)" : "var(--text)",
+              "animation-delay": `${s.delay}s`,
+            }}
           />
         )}
       </For>
