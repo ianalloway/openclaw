@@ -1,5 +1,6 @@
 import type { JSX } from "@solidjs/web";
 import {
+  untrack,
   action,
   createMemo,
   createOptimistic,
@@ -189,7 +190,7 @@ export function VoiceWakeEditor(props: {
 }) {
   // Only an admitted read re-arms loading; reconnecting a retained draft keeps the editor.
   const scope = createMemo(() => props.scope);
-  const failure = voiceControlErrorFallback(() => props.onRetry());
+  const failure = voiceControlErrorFallback(() => untrack(() => props.onRetry()));
   return (
     <Errored fallback={(error, reset) => <VoiceWakeSection notice={failure(error, reset)} />}>
       <Loading

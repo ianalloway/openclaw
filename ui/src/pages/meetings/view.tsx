@@ -2,6 +2,7 @@ import type { TranscriptSessionSummary } from "@openclaw/gateway-protocol";
 import { normalizeNullableString } from "@openclaw/normalization-core/string-coerce";
 import type { JSX } from "@solidjs/web";
 import {
+  untrack,
   Errored,
   For,
   Loading,
@@ -599,7 +600,8 @@ export function TranscriptsView(props: TranscriptsViewProps) {
           icon: <Icon name="settings" />,
           href: captureHref(),
           attributes: {
-            onClick: (event) => handleNavigationClick(event, () => props.onOpenCaptureSettings()),
+            onClick: (event) =>
+              handleNavigationClick(event, () => untrack(() => props.onOpenCaptureSettings())),
           },
         },
         {
@@ -630,7 +632,7 @@ export function TranscriptsView(props: TranscriptsViewProps) {
                 class="btn"
                 href={captureHref()}
                 onClick={(event) =>
-                  handleNavigationClick(event, () => props.onOpenCaptureSettings())
+                  handleNavigationClick(event, () => untrack(() => props.onOpenCaptureSettings()))
                 }
               >
                 <Icon name="settings" />
