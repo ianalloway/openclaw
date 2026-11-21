@@ -25,7 +25,11 @@ import {
 import { makeAgentAssistantMessage } from "../../test-helpers/agent-message-fixtures.js";
 import { getActiveNativeAttempt, getEmbeddedRunAttachment } from "../run-state.js";
 import { registerReplyPromotionTests } from "./attempt-stream-prepare.reply-promotion.test-support.js";
-import { registerPreparationSteeringTests } from "./attempt-stream-prepare.steering.test-support.js";
+import {
+  steeringOptions,
+  prepareDeferredSteering,
+  registerPreparationSteeringTests,
+} from "./attempt-stream-prepare.steering.test-support.js";
 import type { EmbeddedRunAttemptInternalParams } from "./internal-params.js";
 
 type QuestionDispatcher = Extract<
@@ -73,30 +77,6 @@ import {
 } from "./attempt-stream-prepare.test-support.js";
 
 registerAgentSessionLoopTestLifecycle();
-
-const steeringOptions = {
-  isInboundUserMessage: true,
-  toolAuthorityFingerprint: "test-steering",
-  // Source-bound steering is checked again at final dispatch.
-  assertCurrent: () => {},
-};
-
-function prepareDeferredSteering(
-  session: NonNullable<Parameters<typeof prepareCatalogExecutor>[0]>["activeSession"],
-  withFinalizeHook = false,
-) {
-  return prepareCatalogExecutor({
-    activeSession: session,
-    ...(withFinalizeHook
-      ? { hookRunner: { hasHooks: (name: string) => name === "before_agent_finalize" } as never }
-      : {}),
-    attempt: {
-      deferTerminalLifecycle: true,
-      onDeferredLifecycleOwner: () => {},
-      toolAuthorityFingerprint: steeringOptions.toolAuthorityFingerprint,
-    },
-  });
-}
 
 async function useRealSubscription() {
   const actual = await vi.importActual<typeof import("../../embedded-agent-subscribe.js")>(

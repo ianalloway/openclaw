@@ -23,6 +23,7 @@ import {
   getPluginRegistryResourceOwner,
   isPluginRecordActive,
 } from "./registry-lifecycle.js";
+import { createRuntimeRegistryRelease } from "./registry-runtime-binding.js";
 import {
   createRegisteredChannelRuntimeResolver,
   createScopedPluginChannelRuntime,
@@ -41,13 +42,6 @@ import {
 import { withNativeSubagentRuntimeGuard } from "./runtime/native-subagent-context.js";
 import type { PluginRuntime } from "./runtime/types.js";
 import type { PluginRegistrationMode } from "./types.js";
-
-// A completed reaction must retain only the emptied holder, not the caller's registry closure.
-function createRuntimeRegistryRelease(held: PluginRegistry[]) {
-  return () => {
-    held.length = 0;
-  };
-}
 
 export function createPluginRuntimeResolver(state: PluginRegistryState) {
   const { registry, registryParams } = state;

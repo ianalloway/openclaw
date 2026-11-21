@@ -18,6 +18,8 @@ import { useTlonMonitorFixture } from "./monitor.test-harness.js";
 
 const {
   monitorTlonProvider,
+  withMonitor,
+  getSubscription,
   authenticateMock,
   buildChannelInboundEnvelopeMock,
   builtInboundContextPayload,
@@ -46,35 +48,6 @@ afterEach(async () => {
     ),
   );
 });
-
-async function withMonitor(run: (runtime: RuntimeEnv) => Promise<void>) {
-  const controller = new AbortController();
-  const runtime = { error: vi.fn(), exit: vi.fn(), log: vi.fn() } satisfies RuntimeEnv;
-  const monitor = monitorTlonProvider({
-    scheduler: createTestPluginServiceScheduler(),
-    abortSignal: controller.signal,
-    runtime,
-  });
-  // Observe startup failures while the subscription assertion is pending.
-  void monitor.catch(() => {});
-  try {
-    await vi.waitFor(() => expect(sseClientMock.connect).toHaveBeenCalledOnce());
-    await run(runtime);
-  } finally {
-    controller.abort();
-    await monitor;
-  }
-}
-
-function getSubscription(app: string, path?: string) {
-  const subscription = sseClientMock.subscribe.mock.calls
-    .map(([value]) => value)
-    .find((value) => value.app === app && (path === undefined || value.path === path));
-  if (!subscription) {
-    throw new Error(`expected ${app} ${path ?? ""} subscription`);
-  }
-  return subscription;
-}
 
 it.each([
   { ship: "~nec", text: "approve missing", reply: "No pending approval found for ID: missing" },

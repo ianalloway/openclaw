@@ -1,5 +1,5 @@
-import "../../test-utils/prepare-compiled-subprocesses.js";
 import fsSync from "node:fs";
+import "../../test-utils/prepare-compiled-subprocesses.js";
 import fs from "node:fs/promises";
 import path from "node:path";
 import { expectDefined } from "@openclaw/normalization-core/expect";
@@ -48,12 +48,14 @@ import {
   enqueueSessionEventForHost,
 } from "./session-event-handoff.js";
 import {
+  ownerRequesterOutcomes,
   configureEventState,
   openEventToolHost,
   recordWatchEvents,
   runEventFixture,
   startEmbeddedTurn,
 } from "./session-event.test-support.js";
+
 // mock-isolation: Use synthetic model execution with real admission and native filesystem guards.
 vi.mock("../../agents/embedded-agent-runner/run.js", () => ({
   runEmbeddedAgent: vi.fn(),
@@ -841,18 +843,6 @@ it.for([
     });
   },
 );
-
-const ownerRequesterOutcomes = {
-  owner: { owner: true, restart: { ok: true }, requester: "456", scheduled: 1 },
-  guest: { owner: false, restart: { gated: true }, requester: undefined, scheduled: 0 },
-  "revoked-before-admission": { owner: false, restart: { gated: true }, scheduled: 0 },
-  // Revoking publishes config, which retires the admitted turn's tool host before the call.
-  "revoked-after-admission": {
-    owner: true,
-    restart: "agent harness host capability is no longer active",
-    scheduled: 0,
-  },
-};
 
 it.for(Object.keys(ownerRequesterOutcomes) as Array<keyof typeof ownerRequesterOutcomes>)(
   "runs an owner-only tool from a background completion only for its current owner requester: %s",

@@ -147,3 +147,15 @@ export async function openEventToolHost(
   );
   return { admittedRunContext, tools, close: () => host.close() };
 }
+
+export const ownerRequesterOutcomes = {
+  owner: { owner: true, restart: { ok: true }, requester: "456", scheduled: 1 },
+  guest: { owner: false, restart: { gated: true }, requester: undefined, scheduled: 0 },
+  "revoked-before-admission": { owner: false, restart: { gated: true }, scheduled: 0 },
+  // Revoking publishes config, which retires the admitted turn's tool host before the call.
+  "revoked-after-admission": {
+    owner: true,
+    restart: "agent harness host capability is no longer active",
+    scheduled: 0,
+  },
+};

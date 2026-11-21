@@ -2,12 +2,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
-import {
-  awaitGateBeforeSettlement,
-  createDeferred,
-  nextEventLoopTurn,
-  withinTest,
-} from "../../../test/helpers/promise.js";
+import { nextEventLoopTurn, withinTest } from "../../../test/helpers/promise.js";
 import { repairToolUseResultPairing } from "../../agents/session-transcript-repair.js";
 import { normalizeLegacySessionEntryDelivery } from "../../infra/state-migrations.legacy-session-store.js";
 import { recordDeliveredCommandExchange } from "../../plugin-sdk/session-transcript-runtime.js";
@@ -29,7 +24,6 @@ import {
   persistSessionTranscriptTurn,
   readLatestTranscriptAssistantText,
   replaceSessionEntry,
-  updateSessionEntry,
 } from "./session-accessor.js";
 import * as activeTranscriptEvents from "./session-accessor.sqlite-active-events.js";
 import { replaceSessionEntrySync } from "./session-accessor.sqlite-entry.js";
@@ -38,10 +32,10 @@ import { resolveSqliteTargetFromSessionStorePath } from "./session-sqlite-target
 import { waitForSessionTranscriptIndexReconcile } from "./session-transcript-reconcile.js";
 import { useTempSessionsFixture } from "./test-helpers.js";
 import {
-  createExactAssistantMessage,
-  timedMessageEvent,
-  messageEvent,
-} from "./transcript-message.test-support.js";
+  startEntryChange,
+  writeLegacyTranscriptFixture,
+} from "./transcript-fixture-operations.test-support.js";
+import { createExactAssistantMessage, messageEvent } from "./transcript-message.test-support.js";
 import { registerRecentTranscriptTextSnapshotTests } from "./transcript-recent-text.test-support.js";
 import {
   bindOwnedSessionTranscriptWrites,
@@ -157,58 +151,12 @@ describe("appendAssistantMessageToSessionTranscript", () => {
       ...params,
     });
   }
-  function startEntryChange(patch: Partial<InternalSessionEntry>) {
-    const gate = createDeferred();
-    const started = createDeferred();
-    const change = updateSessionEntry(transcriptScope(), async () => {
-      started.resolve();
-      await gate.promise;
-      return patch;
-    });
-    // Return retirement ownership before waiting: a missing entry never calls the updater.
-    return {
-      started: awaitGateBeforeSettlement(
-        started.promise,
-        change,
-        "session entry change settled before its updater started",
-      ),
-      finish: () => {
-        gate.resolve();
-        return change;
-      },
-    };
-  }
   type BeforeMessageWriteParams = Parameters<
     NonNullable<
       Parameters<typeof appendExactAssistantMessageToSessionTranscript>[0]["beforeMessageWrite"]
     >
   >[0];
   type TranscriptRepairMessage = Parameters<typeof repairToolUseResultPairing>[0][number];
-
-  function writeLegacyTranscriptFixture(params: {
-    transcriptPath: string;
-    message: { role: "user"; content: string; timestamp: number };
-  }) {
-    const entries = [
-      {
-        type: "session",
-        version: 4,
-        id: sessionId,
-        timestamp: new Date(0).toISOString(),
-        cwd: fixture.sessionsDir(),
-      },
-      timedMessageEvent(
-        "legacy-message",
-        null,
-        new Date(params.message.timestamp).toISOString(),
-        params.message,
-      ),
-    ];
-    fs.writeFileSync(
-      params.transcriptPath,
-      `${entries.map((entry) => JSON.stringify(entry)).join("\n")}\n`,
-    );
-  }
 
   async function writeTranscriptStore(entry: SessionEntryFixture = {}) {
     await replaceSessionEntry(
@@ -638,7 +586,7 @@ describe("appendAssistantMessageToSessionTranscript", () => {
     await writeTranscriptStore({
       sessionFile: `sqlite:main:${sessionId}:${fixture.storePath()}`,
     });
-    writeLegacyTranscriptFixture({
+    writeLegacyTranscriptFixture(sessionId, fixture.sessionsDir(), {
       transcriptPath: transcriptFile(),
       message: { role: "user", content: "stale jsonl context", timestamp: 1_000 },
     });
@@ -650,11 +598,11 @@ describe("appendAssistantMessageToSessionTranscript", () => {
     try {
       const outsideFile = path.join(outsideDir, "outside.jsonl");
       await writeTranscriptStore({ sessionFile: outsideFile });
-      writeLegacyTranscriptFixture({
+      writeLegacyTranscriptFixture(sessionId, fixture.sessionsDir(), {
         transcriptPath: outsideFile,
         message: { role: "user", content: "outside text", timestamp: 1_000 },
       });
-      writeLegacyTranscriptFixture({
+      writeLegacyTranscriptFixture(sessionId, fixture.sessionsDir(), {
         transcriptPath: transcriptFile(),
         message: { role: "user", content: "contained text", timestamp: 2_000 },
       });
@@ -959,7 +907,7 @@ describe("appendAssistantMessageToSessionTranscript", () => {
                 : kind === "lifecycle"
                   ? { lifecycleRevision: "replacement-revision" }
                   : { activeWriterRunId: "run-b" };
-            change = startEntryChange(patch);
+            change = startEntryChange(transcriptScope(), patch);
             await withinTest(change.started, signal);
             const admission = {
               expectedSessionId: sessionId,

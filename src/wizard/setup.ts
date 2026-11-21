@@ -17,8 +17,7 @@ import {
   buildPluginCompatibilitySnapshotNotices,
   formatPluginCompatibilityNotice,
 } from "../plugins/status.js";
-import type { RuntimeEnv } from "../runtime.js";
-import { defaultRuntime } from "../runtime.js";
+import { type RuntimeEnv, defaultRuntime } from "../runtime.js";
 import { resolveUserPath } from "../utils.js";
 import { t } from "./i18n/index.js";
 import { runWizardWithPromptNavigation } from "./navigation-prompter.js";
@@ -34,7 +33,7 @@ import {
   SetupMigrationTargetChangedError,
 } from "./setup.migration-snapshot.js";
 import { runSetupModelAuthStep, type SetupModelAuthCandidate } from "./setup.model-auth.js";
-import { resolveSetupSecretInputString } from "./setup.secret-input.js";
+import { resolveSetupProbeSecret } from "./setup.secret-input.js";
 import {
   hasQuickstartGatewayOverrides,
   formatQuickstartGatewaySummary,
@@ -322,28 +321,14 @@ async function runSetupWizardOnce(
 
   const localPort = quickstartGateway.port;
   const localUrl = `ws://127.0.0.1:${localPort}`;
-  const resolveLocalProbeSecret = async (
-    key: "token" | "password",
-    fallback: string | undefined,
-  ) => {
-    const field = `gateway.auth.${key}`;
-    try {
-      return (
-        (await resolveSetupSecretInputString({
-          config: baseConfig,
-          value: quickstartGateway[key],
-          path: field,
-          env: process.env,
-        })) || fallback
-      );
-    } catch (error) {
-      await prompter.note(
-        [t("wizard.setup.secretRefProbeFailed", { field }), formatErrorMessage(error)].join("\n"),
-        t("wizard.gateway.auth"),
-      );
-      return fallback;
-    }
-  };
+  const resolveLocalProbeSecret = (key: "token" | "password", fallback: string | undefined) =>
+    resolveSetupProbeSecret({
+      key,
+      fallback,
+      config: baseConfig,
+      value: quickstartGateway[key],
+      prompter,
+    });
   const localGatewayToken = await resolveLocalProbeSecret(
     "token",
     process.env.OPENCLAW_GATEWAY_TOKEN,

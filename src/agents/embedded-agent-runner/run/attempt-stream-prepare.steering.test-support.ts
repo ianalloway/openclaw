@@ -155,3 +155,27 @@ export function registerPreparationSteeringTests() {
     },
   );
 }
+
+export const steeringOptions = {
+  isInboundUserMessage: true,
+  toolAuthorityFingerprint: "test-steering",
+  // Source-bound steering is checked again at final dispatch.
+  assertCurrent: () => {},
+};
+
+export function prepareDeferredSteering(
+  session: NonNullable<Parameters<typeof prepareCatalogExecutor>[0]>["activeSession"],
+  withFinalizeHook = false,
+) {
+  return prepareCatalogExecutor({
+    activeSession: session,
+    ...(withFinalizeHook
+      ? { hookRunner: { hasHooks: (name: string) => name === "before_agent_finalize" } as never }
+      : {}),
+    attempt: {
+      deferTerminalLifecycle: true,
+      onDeferredLifecycleOwner: () => {},
+      toolAuthorityFingerprint: steeringOptions.toolAuthorityFingerprint,
+    },
+  });
+}

@@ -1,4 +1,7 @@
 import {
+  MODELS_LIST_READ,
+  CRON_LIST_READ,
+  CRON_STATUS_READ,
   CONTROL_PLANE_WRITE,
   OBSERVATION,
   OWN_SESSION_WRITE,
@@ -7,12 +10,12 @@ import {
   PROFILE_STARTUP,
   SESSION_METADATA_READ,
   SESSION_WRITE,
+  STARTUP,
   SIDECAR_CONTROL_PLANE_WRITE,
   UNADVERTISED,
   UNADVERTISED_OBSERVATION,
 } from "./core-descriptor-options.js";
 import type { CoreGatewayMethodSpecRow } from "./core-descriptor-types.js";
-import { cronListShareKey, modelsListShareKey, operatorReadShareKey } from "./read-share-keys.js";
 
 // Canonical append-only method table; derived lookup and dispatch policy lives in core-method-policy.ts.
 // This is the canonical core method policy table: every core handler must appear here so
@@ -106,22 +109,11 @@ export const CORE_GATEWAY_METHOD_SPECS = [
   ["talk.mode", "talk-mode", "operator.talk", "<=2026.7"],
   ["commands.list", "commands", "operator.read", "<=2026.7"],
   // Profile authorization and catalog publication own readiness for this read.
-  [
-    "models.list",
-    "models",
-    "operator.read",
-    "<=2026.7",
-    {
-      ...PROFILE_DEPENDENT,
-      shareKey: modelsListShareKey,
-      shareMaxAgeMs: 1_000,
-      shareInvalidationEvents: ["chat.metadata.changed", "sessions.changed"],
-    },
-  ],
+  ["models.list", "models", "operator.read", "<=2026.7", MODELS_LIST_READ],
   ["models.authStatus", "models-auth-status", "operator.read", "<=2026.7"],
   ["models.authLogout", "models-auth-status", "operator.admin", "<=2026.7", CONTROL_PLANE_WRITE],
   ["tools.catalog", "tools-catalog", "operator.read", "<=2026.7"],
-  ["tools.effective", "tools-effective", "operator.read", "<=2026.7", { startup: true }],
+  ["tools.effective", "tools-effective", "operator.read", "<=2026.7", STARTUP],
   ["tools.invoke", "tools-invoke", "operator.write", "<=2026.7"],
   ["mcp.app.view", "mcp-app", "operator.read", "<=2026.7"],
   ["mcp.app.listTools", "mcp-app", "operator.read", "<=2026.7"],
@@ -242,9 +234,9 @@ export const CORE_GATEWAY_METHOD_SPECS = [
   ["sessions.fork", "sessions-rewind", "operator.write", "<=2026.7"],
   // Params-aware plus state-aware: the handler permits write-scoped cwd only
   // inside configured agent workspaces; execNode and other privileged modes stay admin.
-  ["sessions.create", "sessions-create", "dynamic", "<=2026.7", { startup: true }],
-  ["sessions.send", "sessions-messaging", "operator.write", "<=2026.7", { startup: true }],
-  ["sessions.abort", "sessions-abort", "operator.write", "<=2026.7", { startup: true }],
+  ["sessions.create", "sessions-create", "dynamic", "<=2026.7", STARTUP],
+  ["sessions.send", "sessions-messaging", "operator.write", "<=2026.7", STARTUP],
+  ["sessions.abort", "sessions-abort", "operator.write", "<=2026.7", STARTUP],
   // Dynamic mutation scope policy, including write-scoped model overrides, lives
   // in shared/session-method-scopes.ts. The admin-only sticky configured-default
   // persistence guard lives in server-methods/sessions-mutations.ts.
@@ -299,24 +291,8 @@ export const CORE_GATEWAY_METHOD_SPECS = [
   ["node.invoke.result", "nodes", "node", "<=2026.7"],
   ["node.event", "nodes", "node", "<=2026.7"],
   ["cron.get", "cron", "operator.read", "<=2026.7"],
-  [
-    "cron.list",
-    "cron",
-    "operator.read",
-    "<=2026.7",
-    {
-      shareKey: cronListShareKey,
-      shareMaxAgeMs: 1_000,
-      shareInvalidationEvents: ["cron", "sessions.changed"],
-    },
-  ],
-  [
-    "cron.status",
-    "cron",
-    "operator.read",
-    "<=2026.7",
-    { shareKey: operatorReadShareKey, shareMaxAgeMs: 1_000, shareInvalidationEvents: ["cron"] },
-  ],
+  ["cron.list", "cron", "operator.read", "<=2026.7", CRON_LIST_READ],
+  ["cron.status", "cron", "operator.read", "<=2026.7", CRON_STATUS_READ],
   ["cron.scratch.get", "cron", "operator.admin", "2026.7"],
   ["cron.scratch.set", "cron", "operator.admin", "2026.7"],
   ["cron.add", "cron", "operator.admin", "<=2026.7", CONTROL_PLANE_WRITE],
@@ -343,7 +319,7 @@ export const CORE_GATEWAY_METHOD_SPECS = [
   ["conversations.turn.cancel", "conversations", "operator.admin", "<=2026.7"],
   ["send", "send", "operator.write", "<=2026.7"],
   // Params-aware: ordinary turns need write; /new and /reset mutate lifecycle state as admin.
-  ["agent", "agent", "dynamic", "<=2026.7", { startup: true }],
+  ["agent", "agent", "dynamic", "<=2026.7", STARTUP],
   ["agent.identity.get", "agent-identity", "operator.read", "<=2026.7"],
   ["agent.wait", "agent", "operator.write", "<=2026.7", { ...PROFILE_STARTUP, ...OBSERVATION }],
   ["chat.history", "chat", "operator.read", "<=2026.7"],
@@ -351,7 +327,7 @@ export const CORE_GATEWAY_METHOD_SPECS = [
   ["chat.metadata", "chat", "operator.read", "<=2026.7", SESSION_METADATA_READ],
   ["chat.message.get", "chat", "operator.read", "<=2026.7"],
   ["chat.abort", "chat-abort", "operator.write", "<=2026.7"],
-  ["chat.send", "chat-send", "operator.write", "<=2026.7", { startup: true }],
+  ["chat.send", "chat-send", "operator.write", "<=2026.7", STARTUP],
   // Operator terminal: admin-only PTY surface. Appended to the advertised block
   // so existing advertised method indices stay stable for older clients.
   ["terminal.open", "terminal", "operator.admin", "2026.7"],
@@ -492,11 +468,11 @@ export const CORE_GATEWAY_METHOD_SPECS = [
   // Update campaign mutations share update.run's admin and control-plane write policy.
   ["update.hold", "update", "operator.admin", "2026.8", CONTROL_PLANE_WRITE],
   ["sessions.catalog.startTerminal", "session-catalog", "operator.admin", "2026.8"],
-  ["worker.desktop.observe", "environments", "operator.admin", "2026.8", { startup: true }],
+  ["worker.desktop.observe", "environments", "operator.admin", "2026.8", STARTUP],
   ["projects.list", "projects", "operator.read", "2026.8"],
   ["projects.register", "projects", "operator.admin", "2026.8"],
   ["projects.remove", "projects", "operator.admin", "2026.8"],
-  ["worker.desktop.launch", "environments", "operator.admin", "2026.8", { startup: true }],
+  ["worker.desktop.launch", "environments", "operator.admin", "2026.8", STARTUP],
   // Store CRUD shares the auxiliary secrets runtime owner and appends for stable indices.
   ["secrets.store.list", null, "operator.admin", "2026.8"],
   ["secrets.store.set", null, "operator.admin", "2026.8", CONTROL_PLANE_WRITE],
@@ -512,8 +488,8 @@ export const CORE_GATEWAY_METHOD_SPECS = [
     "2026.8",
     { description: "Search GitHub repositories that can be cloned as managed projects." },
   ],
-  ["desktop.observe", "environments", "operator.admin", "2026.8", { startup: true }],
-  ["desktop.launch", "environments", "operator.admin", "2026.8", { startup: true }],
+  ["desktop.observe", "environments", "operator.admin", "2026.8", STARTUP],
+  ["desktop.launch", "environments", "operator.admin", "2026.8", STARTUP],
   ["device.scopes.requestUpgrade", "devices", "operator.read", "2026.8"],
   ["device.scopes.waitUpgrade", "devices", "operator.read", "2026.8", OBSERVATION],
   ["portal.list", "portals", "operator.read", "2026.8"],
@@ -553,7 +529,7 @@ export const CORE_GATEWAY_METHOD_SPECS = [
   // its required `addedBy` response contract remain unchanged.
   ["session.members.listEvidence", "sessions-sharing", "operator.read", "2026.8"],
   ["plugins.inspect", "plugins", "operator.read", "2026.8"],
-  ["users.github.status", "users", "operator.read", "2026.8", { startup: true }],
+  ["users.github.status", "users", "operator.read", "2026.8", STARTUP],
   ["users.github.authorize.start", "users", "operator.read", "2026.8", SIDECAR_CONTROL_PLANE_WRITE],
   ["users.github.authorize.poll", "users", "operator.read", "2026.8", SIDECAR_CONTROL_PLANE_WRITE],
   [
@@ -565,7 +541,7 @@ export const CORE_GATEWAY_METHOD_SPECS = [
   ],
   ["users.github.disconnect", "users", "operator.read", "2026.8", SIDECAR_CONTROL_PLANE_WRITE],
   ["sessions.github.options", "sessions-github", "operator.read", "2026.8"],
-  ["sessions.github.status", "sessions-github", "operator.read", "2026.8", { startup: true }],
+  ["sessions.github.status", "sessions-github", "operator.read", "2026.8", STARTUP],
   [
     "sessions.github.confirm",
     "sessions-github",
@@ -577,7 +553,7 @@ export const CORE_GATEWAY_METHOD_SPECS = [
   ["users.mentionable", "users-mentionable", "operator.read", "2026.8", PROFILE_STARTUP],
   ["mentions.list", "mentions", "operator.read", "2026.8"],
   // Dismissal only changes the caller's temporary Inbox, not session or shared state.
-  ["mentions.dismiss", "mentions", "operator.read", "2026.8", { startup: true }],
+  ["mentions.dismiss", "mentions", "operator.read", "2026.8", STARTUP],
   // Meeting notes share the trusted operator domain, like workspace/session reads.
   // Strong user/tenant isolation requires separate Gateways; see operator-scopes.md.
   ["transcripts.list", "transcripts", "operator.read", "2026.8"],
@@ -624,7 +600,7 @@ export const CORE_GATEWAY_METHOD_SPECS = [
   ["plugins.credentials.inspect", "plugins", "operator.admin", "2026.9"],
   ["plugins.skills.read", "plugins", "operator.read", "2026.9"],
   ["diagnostics.heapProfile", "diagnostics", "operator.admin", "2026.9"],
-  ["desktop.release", "environments", "operator.admin", "2026.9", { startup: true }],
+  ["desktop.release", "environments", "operator.admin", "2026.9", STARTUP],
   ["mcp.authLogin", "mcp-auth-login", "operator.admin", "2026.9", CONTROL_PLANE_WRITE],
   ["mcp.authLogout", "mcp-auth-logout", "operator.admin", "2026.10", CONTROL_PLANE_WRITE],
   ["environments.session.status", "environments", "operator.read", "2026.9"],

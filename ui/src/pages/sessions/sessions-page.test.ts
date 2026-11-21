@@ -13,7 +13,6 @@ import type { SessionCapability, SessionListOptions } from "../../lib/sessions/i
 import { sessionsResult } from "../../lib/sessions/session-capability.test-support.ts";
 import type {
   SessionDeleteOutcome,
-  SessionDeleteTarget,
   SessionGroupMutationResult,
 } from "../../lib/sessions/session-capability.ts";
 import { registerSessionPluginAction } from "../../test-helpers/control-ui-plugin-action.ts";
@@ -36,6 +35,7 @@ import {
 } from "../../test-helpers/session-menu.ts";
 import { waitForFast } from "../../test-helpers/wait-for.ts";
 import { page as sessionsRoute, type SessionsRouteData } from "./route.ts";
+import { createDeletionPage } from "./sessions-page.deletion.test-support.ts";
 import {
   createContext,
   createGateway,
@@ -82,39 +82,7 @@ async function chooseAdvanced(
   await openSubmenu(menu, "Advanced");
   await selectMenuValue(menu, action);
 }
-async function createDeletionPage(rows: GatewaySessionRow[], agentId = "main") {
-  let serverRows = rows;
-  const deleteRequest = vi.fn(
-    async (target: SessionDeleteTarget): Promise<SessionDeleteOutcome> => {
-      const deleted = serverRows.some((entry) => entry.key === target.key);
-      serverRows = serverRows.filter((entry) => entry.key !== target.key);
-      return { deleted };
-    },
-  );
-  const { connection, sessions, context } = liveSessions(
-    {
-      "sessions.list": () => sessionsResult(serverRows, 1),
-      "sessions.delete": (params) => deleteRequest(params as SessionDeleteTarget),
-    },
-    agentId,
-  );
-  const subscribe = vi.spyOn(sessions, "subscribeList");
-  vi.spyOn(sessions, "deleteMany");
-  context.agentSelection.state.selectedId = agentId;
-  context.agentSelection.state.scopeId = agentId;
-  const page = await createRenderedPage(context, sessionsResult(rows, 1), "all");
-  await waitForFast(() => expect(page.loading).toBe(false));
-  return {
-    page,
-    sessions,
-    connection,
-    deleteRequest,
-    query: subscribe.mock.calls[0]![0],
-    setRows: (next: GatewaySessionRow[]) => {
-      serverRows = next;
-    },
-  };
-}
+
 afterEach(() => {
   document.body.replaceChildren();
   vi.mocked(showConfirmDialog).mockReset();

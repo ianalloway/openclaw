@@ -19,3 +19,10 @@ export function bindPluginRegistryRuntime(registry: PluginRegistry, runtime: Plu
 export function getPluginRegistryRuntime(registry: PluginRegistry): PluginRuntime | undefined {
   return (registry as RuntimeBoundPluginRegistry)[PLUGIN_REGISTRY_RUNTIME];
 }
+
+// A completed reaction must retain only the emptied holder, not the caller's registry closure.
+export function createRuntimeRegistryRelease(held: PluginRegistry[]) {
+  return () => {
+    held.length = 0;
+  };
+}

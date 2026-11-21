@@ -1,12 +1,6 @@
-import { isRecord } from "@openclaw/normalization-core/record-coerce";
 import { prepareAgentDeletionBlocked } from "../../agents/agent-lifecycle-registry.js";
-import {
-  buildAgentRunTerminalOutcomeFromLifecycleEvent,
-  mergeAgentRunTerminalOutcome,
-  type AgentRunTerminalOutcome,
-} from "../../agents/agent-run-terminal-outcome.js";
+import type { AgentRunTerminalOutcome } from "../../agents/agent-run-terminal-outcome.js";
 import { resolveConfiguredAgentId } from "../../agents/agent-scope-config.js";
-import { FAILOVER_REASONS } from "../../agents/failover/signal.js";
 import type { SessionEntryCreationOperation } from "../../config/sessions/session-accessor.sqlite-entry-cache.types.js";
 import {
   composeSessionSourceAssertion,
@@ -65,6 +59,8 @@ import {
   prepareSessionEventTargetForHost,
 } from "./session-event-target.js";
 import {
+  captureSessionEventSettlement,
+  sessionEventFailoverReason,
   createSessionEventReadmission,
   prepareSessionEventReadmission,
   readmitSessionEventOccurrence,
@@ -584,22 +580,16 @@ export function enqueueSessionEventForHost(
           ...(options.scheduledAutomation ? { beforeScheduledStart: prepareStart } : {}),
           onStarted: start,
           onTerminalEvent: (event) => {
-            const observation = event.data.errorObservation;
-            errorReason =
-              event.data.phase === "error" && isRecord(observation)
-                ? FAILOVER_REASONS.find((reason) => reason === observation.failoverReason)
-                : undefined;
+            errorReason = sessionEventFailoverReason(event.data);
           },
           onTerminal: async (runId, outcome, deliveryEvidence) => {
             // Settlement rechecks authority and can reject after Stop. Capture the
             // runtime's timeout/cancellation facts before that asynchronous boundary.
-            terminalOutcome = mergeAgentRunTerminalOutcome(
+            terminalOutcome = captureSessionEventSettlement(
               terminalOutcome,
-              buildAgentRunTerminalOutcomeFromLifecycleEvent({
-                phase: outcome === "completed" ? "end" : "error",
-                data: deliveryEvidence?.meta,
-                abortSignal: operation?.abortSignal ?? signal,
-              }),
+              outcome,
+              deliveryEvidence,
+              operation?.abortSignal ?? signal,
             );
             const terminal = await settleSessionEventTurn({
               automation: options.scheduledAutomation,
