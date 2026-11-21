@@ -166,7 +166,6 @@ async fn next_event(events: &mut mpsc::UnboundedReceiver<MockEvent>) -> MockEven
 }
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
-#[ignore = "requires Linux and dbus-daemon; run with cargo test -- --ignored logind"]
 async fn logind_full_sleep_cycle_releases_and_reacquires_inhibitor() {
     exercise_logind_listener(None, WakeProgress::None).await;
 }
@@ -187,19 +186,16 @@ enum WakeProgress {
 }
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
-#[ignore = "requires Linux and dbus-daemon; run with cargo test -- --ignored logind"]
 async fn logind_stream_end_retires_cycle_without_wake() {
     exercise_logind_listener(Some(TerminalLoss::StreamEnded), WakeProgress::None).await;
 }
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
-#[ignore = "requires Linux and dbus-daemon; run with cargo test -- --ignored logind"]
 async fn logind_invalid_signal_retires_cycle_without_wake() {
     exercise_logind_listener(Some(TerminalLoss::InvalidSignal), WakeProgress::None).await;
 }
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
-#[ignore = "requires Linux and dbus-daemon; run with cargo test -- --ignored logind"]
 async fn logind_cancellation_retires_cycle_without_wake() {
     for loss in [TerminalLoss::Cancelled, TerminalLoss::CancelledPreparing] {
         exercise_logind_listener(Some(loss), WakeProgress::None).await;
@@ -207,7 +203,6 @@ async fn logind_cancellation_retires_cycle_without_wake() {
 }
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
-#[ignore = "requires Linux and dbus-daemon; run with cargo test -- --ignored logind"]
 async fn logind_terminal_loss_preserves_unpolled_wake() {
     for loss in [
         TerminalLoss::StreamEnded,
@@ -219,7 +214,6 @@ async fn logind_terminal_loss_preserves_unpolled_wake() {
 }
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
-#[ignore = "requires Linux and dbus-daemon; run with cargo test -- --ignored logind"]
 async fn logind_terminal_loss_preserves_refreshing_wake() {
     for loss in [
         TerminalLoss::StreamEnded,

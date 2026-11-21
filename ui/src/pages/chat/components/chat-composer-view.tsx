@@ -123,17 +123,16 @@ export function renderChatComposerView(
       (props.realtimeTalkCameraDevices?.length ?? 0) >= 2 && Boolean(props.onSwitchRealtimeCamera),
   );
   const slashMenuAnnouncementId = () => paneDomId(props.paneId, "slash-active-announcement");
-  // Owner refreshes replace the banner and callback values, not the focused action's DOM.
+  // Commit the shell and its replacement banner in the same frame.
+  // Owner refreshes keep the focused action's DOM while updating the banner and callbacks.
   const disabledBanner = (
     <Show when={props.disabledBanner?.presentation !== "hidden" ? props.disabledBanner : undefined}>
       {(banner) => (
-        <ChatLazyBoundary>
-          <DisabledBanner
-            banner={banner()}
-            showAbortableUi={context().showAbortableUi}
-            runControls={context().runControlsProps}
-          />
-        </ChatLazyBoundary>
+        <DisabledBanner
+          banner={banner()}
+          showAbortableUi={context().showAbortableUi}
+          runControls={context().runControlsProps}
+        />
       )}
     </Show>
   );
@@ -228,7 +227,7 @@ export function renderChatComposerView(
     ) : undefined;
   });
   const fallbackStatus = createMemo(() => renderFallbackIndicatorSolid(props.fallbackStatus));
-  return (
+  const composer = () => (
     <div
       class="agent-chat__composer-shell"
       ref={[footerControl, (element) => (shell = element), elementRef(props.onComposerShellRef)]}
@@ -633,4 +632,5 @@ export function renderChatComposerView(
       )}
     </div>
   );
+  return <ChatLazyBoundary>{composer()}</ChatLazyBoundary>;
 }

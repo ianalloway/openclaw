@@ -9786,7 +9786,7 @@ describe("ci workflow guards", () => {
     if (splitCorpus) {
       expect(readArgs("config")).toEqual([
         ...commonArgs,
-        `--maxWorkers=${Math.min(4, availableParallelism())}`,
+        `--maxWorkers=${Math.min(2, availableParallelism())}`,
         ...scenario.expectedFiles,
       ]);
       expect(readdirSync(directory).filter((file) => file.startsWith("args."))).toEqual([
