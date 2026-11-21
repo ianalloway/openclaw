@@ -22,6 +22,7 @@ import { AttachmentPreview, AttachmentReadStatus } from "./chat-attachments.tsx"
 import { ComposerContent } from "./chat-composer-content.tsx";
 import { ContextNotice } from "./chat-composer-context.tsx";
 import { renderChatPrimaryActionsSolid as ChatPrimaryActions } from "./chat-composer-controls.tsx";
+import { ChatComposerDisabledBanner } from "./chat-composer-disabled-banner.tsx";
 import "../../../styles/chat/emoji-menu.css";
 import "../../../styles/chat/mention-menu.css";
 import { focusComposerFromChrome, paneDomId } from "./chat-composer-dom.ts";
@@ -43,9 +44,6 @@ import { ChatVoiceStatus, ComposerDictationStatus } from "./chat-voice-activity.
 
 type ChatComposerViewContext = ReturnType<typeof createChatComposerContext>;
 
-const DisabledBanner = lazy(() => import("./chat-composer-disabled-banner.tsx"), {
-  export: "ChatComposerDisabledBanner",
-});
 const SlashMenu = lazy(() => import("./chat-composer-slash-menu.tsx"), { export: "SlashMenu" });
 const SkillMenu = lazy(() => import("./chat-composer-skill-menu.tsx"), { export: "SkillMenu" });
 const HumanMentionMenuView = lazy(() => import("./chat-composer-mention-menu.tsx"), {
@@ -123,17 +121,16 @@ export function renderChatComposerView(
       (props.realtimeTalkCameraDevices?.length ?? 0) >= 2 && Boolean(props.onSwitchRealtimeCamera),
   );
   const slashMenuAnnouncementId = () => paneDomId(props.paneId, "slash-active-announcement");
-  // Owner refreshes replace the banner and callback values, not the focused action's DOM.
+  // A restored replacement must join the first composer frame, including its height.
+  // Owner refreshes keep the focused action's DOM while updating the banner and callbacks.
   const disabledBanner = (
     <Show when={props.disabledBanner?.presentation !== "hidden" ? props.disabledBanner : undefined}>
       {(banner) => (
-        <ChatLazyBoundary>
-          <DisabledBanner
-            banner={banner()}
-            showAbortableUi={context().showAbortableUi}
-            runControls={context().runControlsProps}
-          />
-        </ChatLazyBoundary>
+        <ChatComposerDisabledBanner
+          banner={banner()}
+          showAbortableUi={context().showAbortableUi}
+          runControls={context().runControlsProps}
+        />
       )}
     </Show>
   );
