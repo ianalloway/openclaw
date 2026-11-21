@@ -2,7 +2,7 @@ import { execFileSync, spawnSync } from "node:child_process";
 import { copyFileSync, existsSync, mkdirSync, writeFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 
-export function installLineCapToolingFixture(checkout: string) {
+export function installLineCapToolingFixture(checkout: string, toolingRoot = process.cwd()) {
   // Copy the actual entry/import closure: symlinking it would use the installed checkout's loader.
   for (const name of [
     "tsx.mjs",
@@ -30,6 +30,7 @@ export function installLineCapToolingFixture(checkout: string) {
   }
   copyFileSync(resolve("package.json"), join(checkout, "package.json"));
   const origin = execFileSync("git", ["remote", "get-url", "origin"], {
+    cwd: toolingRoot,
     encoding: "utf8",
   }).trim();
   execFileSync("git", ["config", "remote.origin.url", origin], { cwd: checkout });
@@ -38,7 +39,7 @@ export function installLineCapToolingFixture(checkout: string) {
     NODE_OPTIONS: "",
     NODE_PATH: "",
     GITHUB_ACTIONS: "",
-    OPENCLAW_PR_TOOLING_ROOT: process.cwd(),
+    OPENCLAW_PR_TOOLING_ROOT: toolingRoot,
   };
   for (const name of [
     "PNPM_CONFIG_MODULES_DIR",
