@@ -210,7 +210,7 @@ export function ChatQuestionResource(props: ResourceProps) {
       return;
     }
     await operation((current) =>
-      untrack(async () => {
+      untrack(async (): Promise<QuestionResourceAction> => {
         assertUploadsEnabled(context?.config);
         const limits = resolveChatAttachmentLimits(context?.gateway.snapshot.hello?.policy);
         if (
