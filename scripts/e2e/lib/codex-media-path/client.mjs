@@ -1,5 +1,5 @@
 // Client helpers for Codex media-path E2E fixtures.
-import { createHash, randomBytes, randomUUID } from "node:crypto";
+import { createHash, randomInt, randomUUID } from "node:crypto";
 import { setTimeout as delay } from "node:timers/promises";
 import { PROTOCOL_VERSION } from "../../../../dist/gateway/protocol/index.js";
 import { renderBitmapTextPngBase64 } from "../../../../test/helpers/live-image-probe.ts";
@@ -105,7 +105,7 @@ const gateway = await connectGateway();
 
 function randomBitmapTextToken(length = 6) {
   const alphabet = "24567ACEF";
-  return [...randomBytes(length)].map((byte) => alphabet[byte % alphabet.length]).join("");
+  return Array.from({ length }, () => alphabet[randomInt(alphabet.length)]).join("");
 }
 
 try {

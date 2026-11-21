@@ -210,6 +210,46 @@ function runCandidateTrustClassification({
 }
 
 describe("OpenClaw performance workflow", () => {
+  posixIt("requires default-branch ancestry and pinned Kova code before benchmarking", () => {
+    const candidate = findStep("Verify default-branch benchmark revisions", "resolve_target");
+    const baseline = findStep("Verify default-branch benchmark baseline", "vitest_pair");
+    expect(baseline.run).toBe(candidate.run);
+    expect(candidate.if).toBe(
+      "github.ref == format('refs/heads/{0}', github.event.repository.default_branch)",
+    );
+    expect(baseline.if).toBe(candidate.if);
+    expect(candidate.env?.CANDIDATE_SHA).toBe("${{ steps.resolve.outputs.tested_sha }}");
+    expect(baseline.env?.CANDIDATE_SHA).toBe("${{ inputs.baseline_ref }}");
+
+    const root = tempDirs.make("openclaw-performance-ancestry-");
+    const gh = join(root, "gh");
+    const candidateSha = "a".repeat(40);
+    const workflowSha = "b".repeat(40);
+    writeFileSync(
+      gh,
+      '#!/bin/sh\n[ "$2" = "repos/test/perf/compare/$CANDIDATE_SHA...$WORKFLOW_SHA" ] || exit 2\nprintf "%s\\n" "$MERGE_BASE"\n',
+    );
+    chmodSync(gh, 0o755);
+    const verify = (ref: string, mergeBase: string, kova = "") =>
+      spawnSync("/bin/bash", ["-c", candidate.run ?? ""], {
+        env: {
+          PATH: root,
+          CANDIDATE_SHA: ref,
+          WORKFLOW_SHA: workflowSha,
+          GITHUB_REPOSITORY: "test/perf",
+          MERGE_BASE: mergeBase,
+          KOVA_REF: kova,
+          KOVA_CANONICAL_CONFIG_REF: "canonical",
+          KOVA_LEGACY_LIST_CONFIG_REF: "legacy",
+        },
+      }).status;
+    expect(verify(workflowSha, "", "canonical")).toBe(0);
+    expect(verify(candidateSha, candidateSha, "legacy")).toBe(0);
+    expect(verify(candidateSha, workflowSha)).toBe(1);
+    expect(verify(candidateSha, "")).toBe(1);
+    expect(verify(workflowSha, "", "custom")).toBe(1);
+  });
+
   it("keeps Vitest pair benchmarking opt-in and exact-head bound", () => {
     const workflow = readWorkflow();
     const inputs = workflow.on?.workflow_dispatch?.inputs;
