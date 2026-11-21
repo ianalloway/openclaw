@@ -15,6 +15,7 @@ import {
   Loading,
   onSettled,
   Show,
+  untrack,
 } from "solid-js";
 import type { PanelRefreshStatus as RefreshStatus } from "../../components/panel-refresh-status-state.ts";
 import { FloatingHeaderActions } from "../../components/solid/floating-header-actions.tsx";
@@ -119,22 +120,18 @@ export function LogsView(props: LogsProps) {
   const filtered = createMemo(() => {
     const query = needle();
     const levels = LOG_LEVELS.filter((level) => props.levelFilters[level]);
-    const matches =
-      !query && levels.length === LOG_LEVELS.length
-        ? null
-        : (entry: LogRow) =>
-            (!entry.level || props.levelFilters[entry.level]) &&
-            (!query ||
-              normalizeLowercaseStringOrEmpty(
-                [entry.message, entry.subsystem, entry.raw].filter(Boolean).join(" "),
-              )
-                .normalize("NFC")
-                .includes(query));
+    const filteredByLevel = levels.length !== LOG_LEVELS.length;
     const rows: LogRow[] = [];
     const byKey = new Map<VirtualItem["key"], number>();
     for (const entry of props.entries) {
-      if (matches && !matches(entry)) {
+      if ((query || filteredByLevel) && entry.level && !props.levelFilters[entry.level]) {
         continue;
+      }
+      if (query) {
+        const content = [entry.message, entry.subsystem, entry.raw].filter(Boolean).join(" ");
+        if (!normalizeLowercaseStringOrEmpty(content).normalize("NFC").includes(query)) {
+          continue;
+        }
       }
       byKey.set(entry.id, rows.length);
       rows.push(entry);
@@ -233,11 +230,14 @@ export function LogsView(props: LogsProps) {
         updateSizeAdjustment(instance, scrolling);
         notify(offset, scrolling);
       };
-      synchronizeScrollOffset = (scrolling) => updateOffset(stream.scrollTop, scrolling);
-      return observeElementOffset(instance, (offset, scrolling) => {
-        readerScrollPending = false;
-        updateOffset(offset, scrolling);
-      });
+      synchronizeScrollOffset = (scrolling) =>
+        untrack(() => updateOffset(stream.scrollTop, scrolling));
+      return observeElementOffset(instance, (offset, scrolling) =>
+        untrack(() => {
+          readerScrollPending = false;
+          updateOffset(offset, scrolling);
+        }),
+      );
     },
     scrollToFn: elementScroll,
     overscan: 6,
