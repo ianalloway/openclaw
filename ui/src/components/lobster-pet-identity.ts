@@ -267,6 +267,6 @@ export function lobsterLookProperties(look: LobsterPetLook): Record<string, stri
           "--lob-antennae-color": chimeraParts.antennae,
         }
       : {}),
-    ...(look.glint ? { "--lob-glint-seed": String(look.glint) } : {}),
+    ...(look.glint ? { "--lob-glint-seed": look.glint } : {}),
   };
 }
