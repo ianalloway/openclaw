@@ -1,5 +1,6 @@
 import type { Question } from "@openclaw/gateway-protocol";
 import {
+  untrack,
   action,
   createMemo,
   createOptimistic,
@@ -208,32 +209,34 @@ export function ChatQuestionResource(props: ResourceProps) {
     if (!files.length) {
       return;
     }
-    await operation(async (current) => {
-      assertUploadsEnabled(context?.config);
-      const limits = resolveChatAttachmentLimits(context?.gateway.snapshot.hello?.policy);
-      if (
-        !limits ||
-        files.length + uploaded.length > 64 ||
-        admitAttachmentFiles(files, limits, 0).length !== files.length
-      ) {
-        throw new Error(t("chat.questions.resourceUploadTooLarge"));
-      }
-      const payload: Extract<QuestionResourceAction, { action: "upload" }>["files"] = [];
-      for (const file of files) {
-        const bytes = new Uint8Array(await file.arrayBuffer());
-        if (!current()) {
-          throw new Error("Resource upload cancelled");
-        }
+    await operation((current) =>
+      untrack(async () => {
         assertUploadsEnabled(context?.config);
-        payload.push({
-          name: file.name,
-          mimeType: file.type || "application/octet-stream",
-          content: bytesToBase64(bytes),
-          ...(file.webkitRelativePath ? { relativePath: file.webkitRelativePath } : {}),
-        });
-      }
-      return { action: "upload", files: payload };
-    });
+        const limits = resolveChatAttachmentLimits(context?.gateway.snapshot.hello?.policy);
+        if (
+          !limits ||
+          files.length + uploaded.length > 64 ||
+          admitAttachmentFiles(files, limits, 0).length !== files.length
+        ) {
+          throw new Error(t("chat.questions.resourceUploadTooLarge"));
+        }
+        const payload: Extract<QuestionResourceAction, { action: "upload" }>["files"] = [];
+        for (const file of files) {
+          const bytes = new Uint8Array(await file.arrayBuffer());
+          if (!current()) {
+            throw new Error("Resource upload cancelled");
+          }
+          assertUploadsEnabled(context?.config);
+          payload.push({
+            name: file.name,
+            mimeType: file.type || "application/octet-stream",
+            content: bytesToBase64(bytes),
+            ...(file.webkitRelativePath ? { relativePath: file.webkitRelativePath } : {}),
+          });
+        }
+        return { action: "upload", files: payload };
+      }),
+    );
   }
 
   const dispatchSelection = (values: string[]) => props.onSelection?.(values);

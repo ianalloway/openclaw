@@ -1,5 +1,6 @@
 import type { BoardGetParams } from "@openclaw/gateway-protocol";
 import {
+  untrack,
   Errored,
   Loading,
   Show,
@@ -125,17 +126,18 @@ function PluginSessionDashboardContent(
     host,
     ["session", "client", "connected", "canMutate", "canGrant"],
     undefined,
-    () => {
-      const current = resource();
-      if (current && host.client) {
-        current.lease.update(host.client, host.connected, {
-          canPinWidgets: false,
-          canPinMcpApps: false,
-          canMutate: host.canMutate,
-          canGrant: host.canGrant,
-        });
-      }
-    },
+    () =>
+      untrack(() => {
+        const current = resource();
+        if (current && host.client) {
+          current.lease.update(host.client, host.connected, {
+            canPinWidgets: false,
+            canPinMcpApps: false,
+            canMutate: host.canMutate,
+            canGrant: host.canGrant,
+          });
+        }
+      }),
   );
   // Preserve manual choices within a scope; a replacement initializes only after its first snapshot.
   const [presentation, setPresentation] = createStore<{
