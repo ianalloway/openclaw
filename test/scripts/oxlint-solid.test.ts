@@ -28,6 +28,7 @@ it("enforces Solid 2 rules across UI helpers and plugin views", () => {
     { root: "ui/src/lib/reactive", extension: "ts", diagnostics: helperDiagnostics },
     { root: "ui/src/lib/reactive", extension: "tsx", diagnostics: componentDiagnostics },
     { root: "ui/src/pages", extension: "ts", diagnostics: helperDiagnostics },
+    { root: "ui/src/pages/chat", extension: "tsx", diagnostics: componentDiagnostics },
     { root: "ui/src/lib", extension: "ts", diagnostics: helperDiagnostics },
     { root: "extensions/memory-core/browser", extension: "ts", diagnostics: helperDiagnostics },
     { root: "extensions/clawrouter/src", extension: "tsx", diagnostics: componentDiagnostics },
@@ -45,6 +46,22 @@ it("enforces Solid 2 rules across UI helpers and plugin views", () => {
         name === "invalid" ? diagnostics : [],
       );
     }
+  }
+  const deferredFixture = `
+    declare function liveValue<T>(read: () => T): () => T;
+    export function DeferredLabel(props: { label: string }) {
+      const label = liveValue(() => props.label);
+      return <span>{label()}</span>;
+    }
+  `;
+  for (const [root, diagnostics] of [
+    ["ui/src/pages/chat", []],
+    ["ui/src/pages", ["solid(reactivity):warning"]],
+  ] as const) {
+    const directory = tempDirs.make("solid-lint-test-", path.resolve(root));
+    const file = path.join(directory, "deferred-label.tsx");
+    fs.writeFileSync(file, deferredFixture);
+    expected.set(path.relative(process.cwd(), file).replaceAll("\\", "/"), [...diagnostics]);
   }
   const dataDirectory = tempDirs.make("solid-lint-test-", path.resolve("ui/src/lib"));
   const dataFile = path.join(dataDirectory, "plain-data.ts");

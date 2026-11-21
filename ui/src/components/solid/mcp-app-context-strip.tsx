@@ -1,4 +1,4 @@
-import { createMemo, Errored, lazy, Loading, onSettled, Show } from "solid-js";
+import { untrack, createMemo, Errored, lazy, Loading, onSettled, Show } from "solid-js";
 import { gatewayPresentationScope } from "../../app/gateway-presentation-scope.ts";
 import { registerMcpAppEnglish } from "../../i18n/locales/en-mcp-app.ts";
 import { formatUiError } from "../../lib/format-error.ts";
@@ -37,59 +37,61 @@ export function McpAppContextStrip(props: McpAppContextStripProps) {
   });
   onSettled(() => {
     mounted = true;
-    const stop = context.gateway.subscribeEvents((event) => {
-      if (event.event !== "mcp.app.hostContextChanged") {
-        return;
-      }
-      const payload = event.payload;
-      if (
-        !payload ||
-        typeof payload !== "object" ||
-        !("viewId" in payload) ||
-        typeof payload.viewId !== "string"
-      ) {
-        return;
-      }
-      const client = context.gateway.snapshot.client;
-      const entry = readMcpAppContexts(client, props.sessionKey, props.agentId).find(
-        (item) => item.viewId === payload.viewId,
-      );
-      if (!client || !entry) {
-        return;
-      }
-      if ("modelContext" in payload && payload.modelContext === null) {
-        if (!("updateId" in payload) || payload.updateId !== entry.state?.updateId) {
+    const stop = context.gateway.subscribeEvents((event) =>
+      untrack(() => {
+        if (event.event !== "mcp.app.hostContextChanged") {
           return;
         }
-        publishMcpAppContext(client, { ...entry, state: null });
-        return;
-      }
-      const scope = gatewayPresentationScope(context.gateway).key;
-      const sessionKey = props.sessionKey;
-      const agentId = props.agentId;
-      const request = client.request<{ state: McpAppContextState }>("mcp.app.modelContext", {
-        sessionKey: entry.sessionKey,
-        agentId: entry.agentId,
-        viewId: entry.viewId,
-      });
-      refreshes.set(entry, request);
-      void request
-        .then((result) => {
-          if (
-            mounted &&
-            refreshes.get(entry) === request &&
-            context.gateway.snapshot.client === client &&
-            gatewayPresentationScope(context.gateway).key === scope &&
-            props.sessionKey === sessionKey &&
-            props.agentId === agentId &&
-            readMcpAppContexts(client, sessionKey, agentId).includes(entry)
-          ) {
-            publishMcpAppContext(client, { ...entry, state: result.state });
+        const payload = event.payload;
+        if (
+          !payload ||
+          typeof payload !== "object" ||
+          !("viewId" in payload) ||
+          typeof payload.viewId !== "string"
+        ) {
+          return;
+        }
+        const client = context.gateway.snapshot.client;
+        const entry = readMcpAppContexts(client, props.sessionKey, props.agentId).find(
+          (item) => item.viewId === payload.viewId,
+        );
+        if (!client || !entry) {
+          return;
+        }
+        if ("modelContext" in payload && payload.modelContext === null) {
+          if (!("updateId" in payload) || payload.updateId !== entry.state?.updateId) {
+            return;
           }
-        })
-        // A failed refresh does not revoke the accepted context.
-        .catch(() => {});
-    });
+          publishMcpAppContext(client, { ...entry, state: null });
+          return;
+        }
+        const scope = gatewayPresentationScope(context.gateway).key;
+        const sessionKey = props.sessionKey;
+        const agentId = props.agentId;
+        const request = client.request<{ state: McpAppContextState }>("mcp.app.modelContext", {
+          sessionKey: entry.sessionKey,
+          agentId: entry.agentId,
+          viewId: entry.viewId,
+        });
+        refreshes.set(entry, request);
+        void request
+          .then((result) => {
+            if (
+              mounted &&
+              refreshes.get(entry) === request &&
+              context.gateway.snapshot.client === client &&
+              gatewayPresentationScope(context.gateway).key === scope &&
+              props.sessionKey === sessionKey &&
+              props.agentId === agentId &&
+              readMcpAppContexts(client, sessionKey, agentId).includes(entry)
+            ) {
+              publishMcpAppContext(client, { ...entry, state: result.state });
+            }
+          })
+          // A failed refresh does not revoke the accepted context.
+          .catch(() => {});
+      }),
+    );
     return () => {
       mounted = false;
       stop();

@@ -1,4 +1,4 @@
-import { createMemo, createSignal, onSettled, useContext } from "solid-js";
+import { untrack, createMemo, createSignal, onSettled, useContext } from "solid-js";
 import { createLayoutMeasurement } from "../lib/reactive/layout-measurement.ts";
 import { createResizeObserver } from "../lib/reactive/observers.ts";
 import type { SessionListHost } from "./app-sidebar-session-render-types.ts";
@@ -246,28 +246,32 @@ export function createSidebarSessionWindow(
     },
   );
   onSettled(() =>
-    scroll.subscribeScroll(() => {
-      const scroller = scroll.element();
-      if (!scroller) {
-        return;
-      }
-      publish();
-      const top = scroller.scrollTop - margin;
-      const anchor = anchorAt(top);
-      if (anchor) {
-        scroll.captureAnchor({ key: anchor.row.key, offset: top - anchor.top });
-      }
-    }),
+    scroll.subscribeScroll(() =>
+      untrack(() => {
+        const scroller = scroll.element();
+        if (!scroller) {
+          return;
+        }
+        publish();
+        const top = scroller.scrollTop - margin;
+        const anchor = anchorAt(top);
+        if (anchor) {
+          scroll.captureAnchor({ key: anchor.row.key, offset: top - anchor.top });
+        }
+      }),
+    ),
   );
   onSettled(() =>
     // Snapshot capture samples the measured zero-offset range without layout reads.
-    scroll.registerWindow(() => {
-      const source = inputs();
-      if (source.length === 0) {
-        return [];
-      }
-      return view() && current === source ? windowAt(0).map((item) => item.row.key) : undefined;
-    }),
+    scroll.registerWindow(() =>
+      untrack(() => {
+        const source = inputs();
+        if (source.length === 0) {
+          return [];
+        }
+        return view() && current === source ? windowAt(0).map((item) => item.row.key) : undefined;
+      }),
+    ),
   );
   const items = createMemo(() => {
     const ready = view();

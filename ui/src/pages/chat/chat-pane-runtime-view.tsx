@@ -233,17 +233,17 @@ export function createChatPaneView(runtime: ChatPaneRuntime) {
     ) {
       pendingLayout = yieldAfterLayout(runtime);
     }
-    if (!pendingLayout) {
-      return <PreparedFrame />;
-    }
+    const layout = pendingLayout;
     const [mounted, setMounted] = createSignal(false);
-    void waitForCommit();
-    // Mount the pane, composer and Details together after the loading frame.
-    void pendingLayout.then(() => {
-      if (!disposed) {
-        setMounted(true);
-      }
-    });
+    if (layout) {
+      void waitForCommit();
+      // Mount the pane, composer and Details together after the loading frame.
+      void layout.then(() => {
+        if (!disposed) {
+          setMounted(true);
+        }
+      });
+    }
     function PreparedFrame() {
       pendingLayout = undefined;
       const context = runtime.context;
@@ -415,26 +415,31 @@ export function createChatPaneView(runtime: ChatPaneRuntime) {
       );
       // Only cold boot already exposes a loading frame. Restored panes keep their
       // synchronous construction even after the warm-frame deadline expires.
-      if (!splitColdBoot) {
-        return <MountedPane />;
-      }
       const [constructed, setConstructed] = createSignal(false);
-      onSettled(() => {
-        frame();
-        pendingLayout = yieldChatTask().then(() => {
-          pendingLayout = undefined;
-          if (!disposed) {
-            setConstructed(true);
-          }
+      if (splitColdBoot) {
+        onSettled(() => {
+          frame();
+          pendingLayout = yieldChatTask().then(() => {
+            pendingLayout = undefined;
+            if (!disposed) {
+              setConstructed(true);
+            }
+          });
         });
-      });
+      }
       return (
-        <Show
-          when={constructed()}
-          fallback={<LoadingState route composer={runtime.ownsRouteComposer} />}
-        >
-          <MountedPane />
-        </Show>
+        <>
+          {splitColdBoot ? (
+            <Show
+              when={constructed()}
+              fallback={<LoadingState route composer={runtime.ownsRouteComposer} />}
+            >
+              <MountedPane />
+            </Show>
+          ) : (
+            <MountedPane />
+          )}
+        </>
       );
       function MountedPane() {
         // Commit transcript geometry and control the browser timer after Solid publishes the frame.
@@ -501,9 +506,18 @@ export function createChatPaneView(runtime: ChatPaneRuntime) {
     }
 
     return (
-      <Show when={mounted()} fallback={<LoadingState route composer={runtime.ownsRouteComposer} />}>
-        <PreparedFrame />
-      </Show>
+      <>
+        {layout ? (
+          <Show
+            when={mounted()}
+            fallback={<LoadingState route composer={runtime.ownsRouteComposer} />}
+          >
+            <PreparedFrame />
+          </Show>
+        ) : (
+          <PreparedFrame />
+        )}
+      </>
     );
   }
 
