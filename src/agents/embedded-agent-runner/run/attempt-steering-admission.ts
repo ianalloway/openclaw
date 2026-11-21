@@ -1,6 +1,7 @@
 import { formatErrorMessage } from "../../../infra/errors.js";
 import type { AgentSession } from "../../sessions/agent-session.js";
 import { log } from "../logger.js";
+import type { PrepareEmbeddedAttemptStreamInput } from "./attempt-stream-prepare.types.js";
 
 export type EmbeddedAttemptSteeringAdmission = {
   accepting: boolean;
@@ -77,4 +78,17 @@ export function withEmbeddedAttemptSteeringAdmission<T>(
     }
     throw error;
   }
+}
+
+export function isAttemptSteeringAdmissionOpen(
+  admission: EmbeddedAttemptSteeringAdmission,
+  input: Pick<PrepareEmbeddedAttemptStreamInput, "getRunState" | "runAbortController">,
+) {
+  const state = input.getRunState();
+  return (
+    admission.accepting &&
+    !state.aborted &&
+    !state.yieldDetected &&
+    !input.runAbortController.signal.aborted
+  );
 }

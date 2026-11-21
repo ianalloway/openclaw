@@ -72,7 +72,11 @@ export function ChatWelcome(
         </div>
       }
     >
-      <div ref={welcomeRef} class="agent-chat__welcome" style="--agent-color: var(--accent)">
+      <div
+        ref={welcomeRef}
+        class="agent-chat__welcome"
+        style={{ "--agent-color": "var(--accent)" }}
+      >
         <div class="agent-chat__welcome-identity">
           <span
             class="agent-chat__welcome-avatar"

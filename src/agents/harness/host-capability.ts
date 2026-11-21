@@ -50,7 +50,11 @@ import {
   transferCoreTtsToolResultProvenance,
 } from "../tools/tts-tool-result-provenance.js";
 import { bindHostToolSurface } from "./host-bound-tool.js";
-import type { AgentHarnessHostCapabilities } from "./host-capability-types.js";
+import type {
+  AgentHarnessHostApprovalResult,
+  AgentHarnessHostCapabilities,
+  HostToolSurfaceOptions,
+} from "./host-capability-types.js";
 import {
   bindHostContinuationRetryCount,
   captureRequiredWorkspaceToolFloor,
@@ -81,13 +85,6 @@ import { createSessionNodeAuthorities } from "./node-execution-authority.js";
 
 type AgentHarnessHostAttempt = Partial<EmbeddedRunAttemptInternalParams> &
   Pick<EmbeddedRunAttemptInternalParams, "admittedRunContext" | "runId">;
-type AgentHarnessHostApprovalResult = NonNullable<
-  Awaited<ReturnType<AgentHarnessHostCapabilities["waitForApproval"]>>
->;
-type HostToolSurfaceOptions = Parameters<
-  NonNullable<AgentHarnessHostCapabilities["createToolSurfaceAsync"]>
->[0];
-
 /** Creates a closure-bound capability before plugin invocation. */
 export function createAgentHarnessHostCapabilities(params: {
   attempt: AgentHarnessHostAttempt;

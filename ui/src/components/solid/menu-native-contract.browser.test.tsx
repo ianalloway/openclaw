@@ -240,7 +240,7 @@ it("updates leaf presentation without replacing the row or its presentation slot
   const [items, setItems] = createSignal<MenuItem[]>([
     { id: "edit", label: "Edit", content: "Custom", icon, details, labelClass: "initial-label" },
   ]);
-  mountMenu(() => ({ items: items() }));
+  untrack(() => mountMenu(() => ({ items: items() })));
   await openMenu();
   const row = item("Edit");
   const label = row.querySelector(".oc-menu-item__label")!;

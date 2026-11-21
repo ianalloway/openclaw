@@ -1,6 +1,6 @@
 /* @vitest-environment jsdom */
 
-import { createSignal, flush, onSettled } from "solid-js";
+import { untrack, createSignal, flush, onSettled } from "solid-js";
 import { afterEach, beforeEach, expect, it, onTestFinished, vi } from "vitest";
 import { createDeferred } from "../../../../../test/helpers/promise.js";
 import { createGatewayRequestMock } from "../../../test-helpers/gateway-client.ts";
@@ -88,7 +88,7 @@ it("keeps a recursive browser download until an admitted search removes it", asy
     await state.sessionWorkspaceState!.readResult;
     flush();
   };
-  current().onSearch("report");
+  untrack(current).onSearch("report");
   await vi.waitFor(() => expect(queries).toHaveLength(1));
   await accept("report", true);
   const action = mounted.getByRole("button", { name: "Download file" });
@@ -103,7 +103,7 @@ it("keeps a recursive browser download until an admitted search removes it", asy
   const call = request.mock.calls.find(([method]) => method === "sessions.files.download")!;
   expect(call[1]).toMatchObject({ path: "/workspace/" + path });
   for (const [index, query] of ["rep", "absent"].entries()) {
-    current().onSearch(query);
+    untrack(current).onSearch(query);
     await vi.waitFor(() => expect(queries).toHaveLength(index + 2));
     copy.focus();
     expect(queries.at(-1)!.query).toBe(query);

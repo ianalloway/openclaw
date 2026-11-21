@@ -1,6 +1,7 @@
 import { normalizeLowercaseStringOrEmpty } from "@openclaw/normalization-core/string-coerce";
 import type { JSX } from "@solidjs/web";
 import {
+  untrack,
   createMemo,
   Errored,
   For,
@@ -246,18 +247,20 @@ function SkillPageFocus(props: {
     region.focus();
     return () => {
       // Back first unhides the retained list; leaving Skills entirely must not move focus.
-      queueMicrotask(() => {
-        const list = props.list();
-        if (!list.isConnected || list.hidden || document.activeElement !== document.body) {
-          return;
-        }
-        if (opener && list.contains(opener)) {
-          opener.focus();
-        }
-        if (document.activeElement === document.body) {
-          list.focus();
-        }
-      });
+      queueMicrotask(() =>
+        untrack(() => {
+          const list = props.list();
+          if (!list.isConnected || list.hidden || document.activeElement !== document.body) {
+            return;
+          }
+          if (opener && list.contains(opener)) {
+            opener.focus();
+          }
+          if (document.activeElement === document.body) {
+            list.focus();
+          }
+        }),
+      );
     };
   });
   return (

@@ -4,7 +4,7 @@ import { keyboardHints } from "../../lib/keyboard-hints.ts";
 import { t } from "../../lib/reactive/i18n.ts";
 import { keyboardHintsVisible } from "../../lib/reactive/keyboard-hints.ts";
 import { listen } from "../../lib/reactive/listener.ts";
-import { nativeListener } from "../../lib/solid-native-listener.ts";
+import { createNativeListenerRef } from "../../lib/solid-native-listener.ts";
 import { registryFor } from "../overlay-registry.ts";
 import { Icon } from "./icon.tsx";
 import "./overlay.css";
@@ -35,7 +35,7 @@ export function HeaderSearchField(props: HeaderSearchFieldProps) {
       input.setSelectionRange(input.value.length, input.value.length);
     }
   });
-  const keydown = nativeListener("keydown", (event: KeyboardEvent) => {
+  const keydown = createNativeListenerRef("keydown", (event: KeyboardEvent) => {
     if (event.isComposing || event.keyCode === 229) {
       return;
     }
@@ -68,7 +68,7 @@ export function HeaderSearchField(props: HeaderSearchFieldProps) {
           props.inputRef?.(element);
         },
         keydown,
-        nativeListener("click", (event) => event.stopPropagation()),
+        createNativeListenerRef("click", (event) => event.stopPropagation()),
       ]}
       class={["header-search__input", props.class]}
       type="search"
@@ -96,7 +96,7 @@ export function HeaderSearchToggle(props: {
       ref={[
         props.controlRef?.(),
         // Menus stop content clicks natively, before any delegated handler could run.
-        nativeListener("click", (event) => {
+        createNativeListenerRef("click", (event) => {
           event.stopPropagation();
           props.onToggle();
         }),
@@ -206,7 +206,7 @@ export function HeaderSearch(props: HeaderSearchProps) {
       ref={[
         (element) => (root = element),
         // The whole row reads as the field, including its icon and padding.
-        nativeListener("click", (event) => {
+        createNativeListenerRef("click", (event) => {
           if (!(event.target instanceof Element && event.target.closest("button, input"))) {
             focusInput();
           }
@@ -252,7 +252,7 @@ export function HeaderSearch(props: HeaderSearchProps) {
           ref={[
             props.controlRef?.(),
             // Menus stop content clicks natively, before any delegated handler could run.
-            nativeListener("click", (event) => {
+            createNativeListenerRef("click", (event) => {
               event.stopPropagation();
               props.onQueryChange("");
               focusInput();

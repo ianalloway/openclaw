@@ -209,18 +209,28 @@ export function prepareThemeLinks(
 }
 
 export function prepareParticipantPalette(palette: ParticipantPalette) {
-  // One prepared string per identity in this palette; streamed tokens only read it.
-  const identityStyles = new Map<number | null, string>();
+  // Streamed tokens share the same prepared colors for each identity.
+  const identityStyles = new Map<number | null, ReturnType<typeof prepare>>();
+  function prepare(identityHue: number | null) {
+    const colors = participantColors(palette, identityHue);
+    const bubble = css(colors.bubble);
+    const name = css(colors.name);
+    return {
+      properties: { "--chat-participant-surface": bubble, "--chat-sender-name-color": name },
+      text: `--chat-participant-surface: ${bubble}; --chat-sender-name-color: ${name}`,
+    };
+  }
+  function forHue(identityHue: number | null) {
+    const cached = identityStyles.get(identityHue);
+    if (cached) {
+      return cached;
+    }
+    const style = prepare(identityHue);
+    identityStyles.set(identityHue, style);
+    return style;
+  }
   return {
-    style(identityHue: number | null): string {
-      const prepared = identityStyles.get(identityHue);
-      if (prepared !== undefined) {
-        return prepared;
-      }
-      const colors = participantColors(palette, identityHue);
-      const style = `--chat-participant-surface: ${css(colors.bubble)}; --chat-sender-name-color: ${css(colors.name)}`;
-      identityStyles.set(identityHue, style);
-      return style;
-    },
+    style: (identityHue: number | null) => forHue(identityHue).text,
+    properties: (identityHue: number | null) => forHue(identityHue).properties,
   };
 }

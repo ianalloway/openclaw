@@ -88,20 +88,21 @@ export function ChatPaneHeader(props: ChatPaneHeaderProps) {
   }) => {
     const chat = createMemo(() => {
       const source = props.detailsControl?.chat;
-      return source
-        ? merge(source, {
-            environment: merge(
-              () => source.environment ?? {},
-              () => ({
-                placement: detailsProps.placement,
-                onOpenMachine:
-                  props.detailsControl?.nativePresentation === "mobile"
-                    ? detailsProps.onOpenMachine
-                    : undefined,
-              }),
-            ),
-          })
-        : undefined;
+      if (!source) {
+        return undefined;
+      }
+      const environment = merge(
+        () => source.environment ?? {},
+        () => ({
+          placement: detailsProps.placement,
+          onOpenMachine:
+            props.detailsControl?.nativePresentation === "mobile"
+              ? detailsProps.onOpenMachine
+              : undefined,
+        }),
+      );
+      const chatWithEnvironment = merge(source, { environment });
+      return chatWithEnvironment;
     });
     return (
       <Show when={props.detailsControl !== undefined}>

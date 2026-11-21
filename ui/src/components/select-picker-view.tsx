@@ -20,8 +20,7 @@ import { createScrollPosition, createScrollStateRef } from "../lib/reactive/scro
 import { nativeListener } from "../lib/solid-native-listener.ts";
 import type { OverlayPlacement } from "./overlay-anchor.ts";
 import { createOverlay } from "./overlay-lifecycle.ts";
-import type { OverlayNativeAdapter } from "./overlay-types.ts";
-import { createPickerPhoneSheet } from "./select-picker-phone-sheet.tsx";
+import { createPickerPhoneSheet, pickerSheetAdapter } from "./select-picker-phone-sheet.tsx";
 import { PickerOptionContent, PickerTriggerContent } from "./select-picker-presentation.tsx";
 import { pickerSearchInputProps } from "./select-picker-search.ts";
 import type { PickerOption, PickerParams, PickerGroup } from "./select-picker-types.ts";
@@ -36,15 +35,6 @@ import "./solid/overlay.css";
 type Section<Option> = { group?: PickerGroup; options: Option[]; expanded: boolean };
 const PickerWindow = lazy(() => import("./select-picker-window.tsx"));
 let nextId = 0;
-const sheetAdapter: OverlayNativeAdapter = {
-  isOpen: (surface) => !surface.hidden,
-  show: (surface) => {
-    surface.hidden = false;
-  },
-  hide: (surface) => {
-    surface.hidden = true;
-  },
-};
 const normalizeSearch = (value: string) => value.toLocaleLowerCase().normalize("NFC");
 
 export function PickerContent<Option extends PickerOption>(props: {
@@ -193,7 +183,7 @@ export function PickerContent<Option extends PickerOption>(props: {
   // Native presentation mode belongs to this mounted overlay lifetime.
   const initialSheet = untrack(() => props.params.sheet);
   const overlay = createOverlay(id, undefined, {
-    native: initialSheet ? sheetAdapter : undefined,
+    native: initialSheet ? pickerSheetAdapter : undefined,
     exclusiveGroup: "menu",
     isValid: () => !props.params.disabled,
     acquireOcclusion: acquireNativeOverlaySurface,
@@ -287,26 +277,30 @@ export function PickerContent<Option extends PickerOption>(props: {
       props.params.searchable === "always" ||
         Boolean(props.params.searchable && (props.params.groupBy || options().length > 8)),
     );
-    queueMicrotask(() => {
-      if (!props.host.isConnected) {
-        return;
-      }
-      if (!initialSheet) {
-        anchor.update(trigger, resolvePlacement(props.params.placement, props.params.variant));
-      }
-      if (!overlay.request(true, focus ? (last ? "last" : "first") : "none")) {
-        return;
-      }
-      if (initialKey) {
-        queueMicrotask(() => {
-          if (searching()) {
-            setQuery(initialKey);
-          } else {
-            menu.typeahead(initialKey);
-          }
-        });
-      }
-    });
+    queueMicrotask(() =>
+      untrack(() => {
+        if (!props.host.isConnected) {
+          return;
+        }
+        if (!initialSheet) {
+          anchor.update(trigger, resolvePlacement(props.params.placement, props.params.variant));
+        }
+        if (!overlay.request(true, focus ? (last ? "last" : "first") : "none")) {
+          return;
+        }
+        if (initialKey) {
+          queueMicrotask(() =>
+            untrack(() => {
+              if (searching()) {
+                setQuery(initialKey);
+              } else {
+                menu.typeahead(initialKey);
+              }
+            }),
+          );
+        }
+      }),
+    );
   }
 
   function scrollFade() {

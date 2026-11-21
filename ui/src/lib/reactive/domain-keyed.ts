@@ -11,7 +11,7 @@ export type ProgressCardProjectionSource = {
   options?: Parameters<SessionProgressCardStore["watch"]>[2];
 };
 
-export function projectProgressCard(source: () => ProgressCardProjectionSource) {
+export function createProgressCardProjection(source: () => ProgressCardProjectionSource) {
   const binding = createMemo(source);
   let currentSource = untrack(binding);
   let disposed = false;
@@ -61,3 +61,5 @@ export function projectProgressCard(source: () => ProgressCardProjectionSource) 
     },
   };
 }
+
+export { createProgressCardProjection as projectProgressCard };

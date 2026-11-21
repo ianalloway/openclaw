@@ -1,5 +1,5 @@
 import { createMemo } from "@solidjs/signals";
-import { createSignal, onSettled, Show } from "solid-js";
+import { untrack, createSignal, onSettled, Show } from "solid-js";
 import { registerBrowserEnglish } from "../../i18n/locales/en-browser.ts";
 import { copyToClipboard } from "../../lib/clipboard.ts";
 import {
@@ -201,14 +201,14 @@ export function BrowserToolbar(
         props.controller.setMode("inspect");
         break;
       case "copy":
-        void copyToClipboard(activeUrl(), () => props.controller.host.isConnected).then(
-          (copied) => {
-            showToast({
-              severity: copied ? "success" : "error",
-              message: t(copied ? "common.copied" : "common.copyFailed"),
-            });
-          },
-        );
+        void copyToClipboard(activeUrl(), () =>
+          untrack(() => props.controller.host.isConnected),
+        ).then((copied) => {
+          showToast({
+            severity: copied ? "success" : "error",
+            message: t(copied ? "common.copied" : "common.copyFailed"),
+          });
+        });
         break;
     }
   };

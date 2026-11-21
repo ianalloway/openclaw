@@ -2,6 +2,10 @@ import path from "node:path";
 import { expectDefined } from "@openclaw/normalization-core";
 import { expect } from "vitest";
 import type { GatewayClientInfo } from "../../packages/gateway-protocol/src/client-info.js";
+import {
+  createOperationalRunInstanceRef,
+  prepareAgentRunAdmission,
+} from "../agents/admitted-run-context.js";
 import { replaceSessionEntry } from "../config/sessions/session-accessor.js";
 import type { InternalSessionEntry } from "../config/sessions/types.js";
 import type { OpenClawConfig } from "../config/types.openclaw.js";
@@ -10,10 +14,15 @@ import { loadPairedDevicePairingStoreRecordReadOnly } from "../infra/device-pair
 import { persistDevicePairingStoreState } from "../infra/device-pairing-store.js";
 import type { PairedDevice } from "../infra/device-pairing.types.js";
 import type { GatewayAccessGrantRef } from "../plugins/gateway-access-policy.types.js";
+import { setUserProfileRole } from "../state/user-profile-writes.worker.js";
 import { ensureProfileForEmail } from "../state/user-profiles.js";
 import { withOpenClawTestState } from "../test-utils/openclaw-test-state.js";
 import { captureAgentTurnPrincipal } from "./agent-turn/principal.js";
 import { captureGatewayAuthPolicy } from "./auth-policy.js";
+import {
+  captureGatewayDeviceRevocation,
+  invalidateGatewayDeviceRevocation,
+} from "./device-revocation.js";
 import { captureGatewayOperatorRunAuthority } from "./operator-run-authority.js";
 import { restoreGatewayOperatorSource } from "./operator-run-recovery.js";
 import type { GatewayRequestContext } from "./server-methods/types.js";
@@ -235,4 +244,74 @@ export function expectRevoked(authority: { signal?: AbortSignal; assertCurrent: 
 export async function restoreFixture(fixture: RecoveryFixture) {
   const source = expectDefined(await fixture.restore(), "restored operator source");
   return { ...source, [Symbol.dispose]: source.release };
+}
+
+export function acceptedCaller(fixture: RecoveryFixture) {
+  const caller = captureGatewayDeviceRevocation(
+    fixture.context,
+    { deviceId: "recovery-device", role: "operator" },
+    () => !fixture.client.invalidated,
+  );
+  fixture.context.invalidateClientsForDevice = (deviceId, options) => {
+    invalidateGatewayDeviceRevocation(fixture.context, deviceId, options?.role);
+    fixture.client.invalidated = true;
+  };
+  return {
+    ...caller,
+    capture: (invocationAuthority?: { assertCurrent: () => void }) =>
+      captureGatewayOperatorRunAuthority({
+        client: captureAgentTurnPrincipal(fixture.client),
+        context: fixture.context,
+        sourceAuthority: null,
+        hasCurrentClientAuthority: caller.isCurrent,
+        invocationAuthority,
+      }),
+  };
+}
+
+export function verifyQueuedRecoveryStart(change: "connection" | "stop" | "revocation") {
+  return withRecovery(async (fixture, _stateDir, profile) => {
+    const connection = new AbortController();
+    Object.assign(fixture.client, { connectionSignal: connection.signal });
+    const stop = new AbortController();
+    const restored = await restoreGatewayOperatorSource({
+      snapshot: fixture.snapshot,
+      target: fixture.target,
+      context: fixture.context,
+      // The new start owns cancellation; the old socket is not its authority.
+      assertCurrent: () => stop.signal.throwIfAborted(),
+    });
+    using _ = { [Symbol.dispose]: restored.release };
+    const runId = `queued-recovery-${change}`;
+    const operationalRunInstance = createOperationalRunInstanceRef(runId);
+    const prepared = prepareAgentRunAdmission({
+      cfg: fixture.context.getRuntimeConfig(),
+      operatorAuthority: restored.authority,
+      operationalRunInstance,
+      facts: {
+        runId,
+        agentId: fixture.target.agentId,
+        ingress: { kind: "system", boundary: "queued-recovery", state: "present" },
+      },
+    });
+    try {
+      connection.abort(new Error("Original socket closed"));
+      if (change === "stop") {
+        stop.abort(new Error("Stop requested"));
+      } else if (change === "revocation") {
+        setUserProfileRole(profile.id, "revoked-role");
+      }
+      if (change === "connection") {
+        expect((await prepared.admit("embedded")).operationalRunInstance).toBe(
+          operationalRunInstance,
+        );
+      } else {
+        await expect(prepared.admit("embedded")).rejects.toThrow(
+          change === "stop" ? /Stop requested|authority.*no longer active/ : /identity changed/,
+        );
+      }
+    } finally {
+      prepared.close();
+    }
+  });
 }

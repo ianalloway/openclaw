@@ -1,6 +1,5 @@
 import path from "node:path";
 import { isDeepStrictEqual } from "node:util";
-import { isRecord } from "@openclaw/normalization-core/record-coerce";
 import { err, ok, type Result } from "@openclaw/normalization-core/result";
 import { isPostgresSqlConnection } from "../../infra/sql-connection.js";
 import {
@@ -52,6 +51,7 @@ import {
   type GenerationRead,
 } from "./session-delivery-generation-read-batch.js";
 import type { LeaseFacts, SessionGenerationEntry } from "./session-delivery-generation.types.js";
+import { isLeaseFacts } from "./session-delivery-lease-facts.js";
 import { withSessionEntriesFromStoresInWorker } from "./session-entry-read-runtime.js";
 import { captureSessionEntrySourceAssertion } from "./session-entry-source-authority.js";
 import {
@@ -65,23 +65,6 @@ import { prepareSessionStoreCandidatesInWorker } from "./session-transcript-work
 import { retainSessionHistoryWorkerDatabase } from "./session-transcript-worker-runtime.js";
 
 export { isSessionDeliveryGenerationRevokedError } from "./session-delivery-generation-errors.js";
-
-function isLeaseFacts(value: unknown): value is LeaseFacts {
-  return (
-    isRecord(value) &&
-    [value.agentId, value.storePath, value.sessionKey].every(
-      (field) => typeof field === "string" && field.length > 0 && field === field.trim(),
-    ) &&
-    (value.sessionId == null ||
-      (typeof value.sessionId === "string" &&
-        value.sessionId.length > 0 &&
-        value.sessionId === value.sessionId.trim())) &&
-    typeof value.storePath === "string" &&
-    path.isAbsolute(value.storePath) &&
-    (value.lifecycleRevision == null ||
-      (typeof value.lifecycleRevision === "string" && value.lifecycleRevision.length > 0))
-  );
-}
 
 /** Prepare once per delivery attempt; committed entry publications keep final I/O checks live. */
 async function prepareSessionGenerationLease(

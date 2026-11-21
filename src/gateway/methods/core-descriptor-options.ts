@@ -1,5 +1,6 @@
-import { operatorReadShareKey } from "./read-share-keys.js";
+import { cronListShareKey, modelsListShareKey, operatorReadShareKey } from "./read-share-keys.js";
 
+export const STARTUP = { startup: true } as const;
 export const CONTROL_PLANE_WRITE = { controlPlaneWrite: true } as const;
 export const SIDECAR_CONTROL_PLANE_WRITE = { startup: true, controlPlaneWrite: true } as const;
 export const UNADVERTISED = { advertise: false } as const;
@@ -18,4 +19,23 @@ export const OWN_SESSION_WRITE = {
 } as const;
 export const PORTAL_SESSION_WRITE = {
   sessionAccess: { mode: "write", allowOwnSessionScope: true, requiredTool: "portal" },
+} as const;
+
+export const MODELS_LIST_READ = {
+  ...PROFILE_DEPENDENT,
+  shareKey: modelsListShareKey,
+  shareMaxAgeMs: 1_000,
+  shareInvalidationEvents: ["chat.metadata.changed", "sessions.changed"],
+} as const;
+
+export const CRON_LIST_READ = {
+  shareKey: cronListShareKey,
+  shareMaxAgeMs: 1_000,
+  shareInvalidationEvents: ["cron", "sessions.changed"],
+} as const;
+
+export const CRON_STATUS_READ = {
+  shareKey: operatorReadShareKey,
+  shareMaxAgeMs: 1_000,
+  shareInvalidationEvents: ["cron"],
 } as const;

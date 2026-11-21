@@ -1,6 +1,6 @@
 import "../styles/sidebar-pages.css";
 import type { JSX } from "@solidjs/web";
-import { createMemo, For, Show } from "solid-js";
+import { untrack, createMemo, For, Show } from "solid-js";
 import type { GatewayControlUiPluginTab } from "../api/gateway.ts";
 import {
   parseSidebarEntry,
@@ -77,11 +77,13 @@ export function SidebarPagesMenu(props: {
   );
   const Entry = (entry: { key: string }) => {
     // Allocate once per entry; the rendered link owns its reactive fields.
-    const content = renderAppSidebarPageEntry(
-      props.host,
-      parseSidebarEntry(entry.key)!,
-      () => zone().pluginTabs,
-      true,
+    const content = untrack(() =>
+      renderAppSidebarPageEntry(
+        props.host,
+        parseSidebarEntry(entry.key)!,
+        () => zone().pluginTabs,
+        true,
+      ),
     );
     return (
       <div class="sidebar-pages__entry">

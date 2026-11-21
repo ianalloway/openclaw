@@ -1,4 +1,5 @@
 import {
+  untrack,
   action as nativeAction,
   affects,
   createMemo,
@@ -228,8 +229,8 @@ export function GitHubPublicationAction(props: {
   controls?: MenuControls;
 }) {
   const operation = createPublicationAction(() => props.publication);
-  const publishedLinkRef = props.controls?.ref();
-  const dismissRef = props.controls?.ref();
+  const publishedLinkRef = untrack(() => props.controls?.ref());
+  const dismissRef = untrack(() => props.controls?.ref());
   const published = () => {
     const result = props.publication.result;
     return result?.status === "published" ? result : undefined;
@@ -308,7 +309,7 @@ function PublicationButton(props: {
   publishLabel?: string;
   pendingLabel?: string;
 }) {
-  const controlRef = props.controls?.ref();
+  const controlRef = untrack(() => props.controls?.ref());
   const operation = createPublicationAction(() => props.publication);
   const action = createMemo(() => {
     const publication = props.publication;
@@ -415,7 +416,7 @@ function PublicationRefresh(props: {
   hideTooltip?: boolean;
   controls?: MenuControls;
 }) {
-  const controlRef = props.controls?.ref();
+  const controlRef = untrack(() => props.controls?.ref());
   const operation = createPublicationAction(() => props.publication);
   return (
     <Errored fallback={operation.error}>
@@ -449,7 +450,7 @@ function PublicationEffect(props: {
   effect: NonNullable<GitHubPublicationView["result"]>["effect"];
   controls?: MenuControls;
 }) {
-  const linkRef = props.controls?.ref();
+  const linkRef = untrack(() => props.controls?.ref());
   return (
     <Show when={props.effect}>
       {(effect) => (
@@ -553,8 +554,8 @@ export function GitHubPublicationDetails(props: {
   menuControls?: boolean;
   controls?: MenuControls;
 }) {
-  const statusRef = props.controls?.ref();
-  const snapshotRef = props.controls?.ref();
+  const statusRef = untrack(() => props.controls?.ref());
+  const snapshotRef = untrack(() => props.controls?.ref());
   const busy = () => props.publication.activity !== null;
   const personalUnavailable = () =>
     publicationButtonSelection(props.publication)?.source === "personal" &&

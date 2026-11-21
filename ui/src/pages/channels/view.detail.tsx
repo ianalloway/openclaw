@@ -194,44 +194,51 @@ function ChannelAccounts(params: ChannelDetailParams) {
   );
 }
 
+function describeChannelFacts(
+  status: ReturnType<typeof resolveChannelDisplayState>["status"],
+  channelId: string,
+) {
+  const text = (field: string) => readStringField(status, field);
+  const audience = text("audienceType");
+  const presentation = channelDetailPresentations.get(channelId);
+  return (presentation?.extraFacts ?? []).map((fact) => {
+    switch (fact) {
+      case "credential":
+        return { label: t("common.credential"), value: text("credentialSource") };
+      case "audience":
+        return {
+          label: t("common.audience"),
+          value: audience
+            ? `${audience}${text("audience") ? ` · ${text("audience")}` : ""}`
+            : undefined,
+        };
+      case "baseUrl":
+        return { label: t("common.baseUrl"), value: text("baseUrl") };
+      case "mode":
+        return { label: t("common.mode"), value: text("mode") };
+    }
+    throw new Error("Unknown bundled channel detail fact");
+  });
+}
+
+function readRelativeChannelTime(value: unknown) {
+  return typeof value === "number" && value > 0 ? formatRelativeTimestamp(value) : undefined;
+}
+
 /** Facts for when something's off; a fact without a value isn't one. */
 function ChannelDetailFacts(params: ChannelDetailParams) {
   const display = createMemo(() => resolveChannelDisplayState(params.channelId, params.props));
   const rows = createMemo(() => {
     const status = display().status;
-    const text = (field: string) => readStringField(status, field);
-    const time = (field: string) => {
-      const value = status?.[field];
-      return typeof value === "number" && value > 0 ? formatRelativeTimestamp(value) : undefined;
-    };
-    const audience = text("audienceType");
-    const presentation = channelDetailPresentations.get(params.channelId);
-    const extras = (presentation?.extraFacts ?? []).map((fact) => {
-      switch (fact) {
-        case "credential":
-          return { label: t("common.credential"), value: text("credentialSource") };
-        case "audience":
-          return {
-            label: t("common.audience"),
-            value: audience
-              ? `${audience}${text("audience") ? ` · ${text("audience")}` : ""}`
-              : undefined,
-          };
-        case "baseUrl":
-          return { label: t("common.baseUrl"), value: text("baseUrl") };
-        case "mode":
-          return { label: t("common.mode"), value: text("mode") };
-      }
-      throw new Error("Unknown bundled channel detail fact");
-    });
+    const extras = describeChannelFacts(status, params.channelId);
     // Shown above when nothing better explains the failure; kept here when something does.
     const hasIssue = channelIssues(params).length > 0;
     const lastError = channelLastError(params);
     const failedProbe = failedProbeDetail(params);
     return [
       ...extras,
-      { label: t("common.lastStart"), value: time("lastStartAt") },
-      { label: t("common.lastProbe"), value: time("lastProbeAt") },
+      { label: t("common.lastStart"), value: readRelativeChannelTime(status?.lastStartAt) },
+      { label: t("common.lastProbe"), value: readRelativeChannelTime(status?.lastProbeAt) },
       {
         label: t("common.probeFailed"),
         value: hasIssue || lastError ? (failedProbe ?? undefined) : undefined,

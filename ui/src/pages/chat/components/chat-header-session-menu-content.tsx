@@ -49,6 +49,7 @@ import type {
   HeaderMenuVersions,
   CompactMenuView,
 } from "./chat-header-session-menu.tsx";
+import { CHAT_VIEW_SETTINGS } from "./chat-header-view-settings.ts";
 import { useChatQuickActionEntries } from "./chat-quick-action.tsx";
 import { useChatSessionSharingMenu } from "./chat-session-sharing-menu.tsx";
 import { canManageChatSessionSharing } from "./chat-session-sharing-shared.tsx";
@@ -58,13 +59,6 @@ const COMPACT_MENU_VIEW_BY_VALUE: Record<string, CompactMenuView> = {
   "compact:open-view": "view",
   "compact:open-versions": "versions",
 };
-
-const VIEW_SETTINGS = [
-  ["reasoning", "chatShowThinking", "chat.view.reasoning", false, true],
-  ["tool-calls", "chatShowToolCalls", "chat.view.toolCalls", true, true],
-  ["commentary", "chatPersistCommentary", "chat.view.commentary", undefined, true],
-  ["inline-commands", "chatInlineCommands", "chat.view.inlineCommands", false, false],
-] as const;
 
 export function ChatHeaderSessionMenuContent(inputs: HeaderMenuContentProps) {
   const sessionDataMemo = new ChatPaneHeaderMemo<SessionMenuData>();
@@ -169,7 +163,10 @@ export function ChatHeaderSessionMenuContent(inputs: HeaderMenuContentProps) {
         !isNativeCatalogAdoptionSessionKey(row.key) && canDeleteSessionRows([row], mainKey),
     };
   });
-  const props = merge(() => inputs.menuProps, panePresentation);
+  const props = merge(
+    () => inputs.menuProps,
+    () => panePresentation(),
+  );
   const controls: MenuControls = {
     get elements() {
       return inputs.controls.elements;
@@ -337,7 +334,7 @@ export function ChatHeaderSessionMenuContent(inputs: HeaderMenuContentProps) {
       return [...viewActions()];
     }
     return [
-      ...VIEW_SETTINGS.map(([value, key, label, onboarding, defaultValue]) => ({
+      ...CHAT_VIEW_SETTINGS.map(([value, key, label, onboarding, defaultValue]) => ({
         id: `view:${value}`,
         label: t(label),
         class: "session-menu__item",
@@ -649,7 +646,7 @@ export function ChatHeaderSessionMenuContent(inputs: HeaderMenuContentProps) {
         return;
       }
       const setting = value.slice("view:".length);
-      const option = VIEW_SETTINGS.find(([id]) => id === setting);
+      const option = CHAT_VIEW_SETTINGS.find(([id]) => id === setting);
       if (option) {
         props.onSettingsChange({ [option[1]]: !(props.settings[option[1]] ?? option[4]) });
       } else if (

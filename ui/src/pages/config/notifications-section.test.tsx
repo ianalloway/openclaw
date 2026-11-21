@@ -1,7 +1,7 @@
 /* @vitest-environment jsdom */
 
 import { expectDefined } from "@openclaw/normalization-core";
-import { createSignal } from "solid-js";
+import { createSignal, untrack } from "solid-js";
 import { expect, it, vi } from "vitest";
 import type { WebPushNotificationPreferences } from "../../../../packages/gateway-protocol/src/schema/push.js";
 import { createDeferredCore } from "../../../../src/shared/deferred.ts";
@@ -404,7 +404,7 @@ it("chooses agent names, saves stable IDs, and reopens without changing other pr
   view.getByRole("button", { name: "Cancel" }).click();
   flush();
   expect(save).toHaveBeenCalledTimes(1);
-  expect(current().preferences?.user.agentIds).toEqual(["research"]);
+  expect(untrack(() => current().preferences?.user.agentIds)).toEqual(["research"]);
 });
 
 it("keeps inheritance, all agents, and a nonempty specific selection distinct", async () => {

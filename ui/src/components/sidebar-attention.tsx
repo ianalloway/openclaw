@@ -1,4 +1,4 @@
-import { createMemo, createSignal, lazy, Loading, onSettled, Show } from "solid-js";
+import { untrack, createMemo, createSignal, lazy, Loading, onSettled, Show } from "solid-js";
 import type { NavigationRouteId } from "../app-navigation.ts";
 import type { ApplicationContext } from "../app/context-types.ts";
 import type { ExecApprovalDecision } from "../app/exec-approval.ts";
@@ -94,11 +94,13 @@ function renderSidebarAttentionContent(props: SidebarAttentionProps, host: HTMLE
     setOverflowBelow(false);
     panelTrigger = null;
     if (trigger) {
-      queueMicrotask(() => {
-        if (!disposed && generation === panelGeneration && scope === routeScope()) {
-          trigger.focus();
-        }
-      });
+      queueMicrotask(() =>
+        untrack(() => {
+          if (!disposed && generation === panelGeneration && scope === routeScope()) {
+            trigger.focus();
+          }
+        }),
+      );
     }
   }
   const syncOverflowCue = (element: HTMLElement) => {
@@ -155,23 +157,27 @@ function renderSidebarAttentionContent(props: SidebarAttentionProps, host: HTMLE
     );
     setSelectedTab("all");
     setPanelOpen(true);
-    queueMicrotask(() => {
-      if (!disposed && generation === panelGeneration && scope === routeScope()) {
-        list?.focus();
-      }
-    });
+    queueMicrotask(() =>
+      untrack(() => {
+        if (!disposed && generation === panelGeneration && scope === routeScope()) {
+          list?.focus();
+        }
+      }),
+    );
   }
   function selectTab(tab: IssueTab) {
     setSelectedTab(tab);
-    queueMicrotask(() => {
-      if (disposed || !panelOpen() || selectedTab() !== tab) {
-        return;
-      }
-      if (list) {
-        list.scrollTop = 0;
-        syncOverflowCue(list);
-      }
-    });
+    queueMicrotask(() =>
+      untrack(() => {
+        if (disposed || !panelOpen() || selectedTab() !== tab) {
+          return;
+        }
+        if (list) {
+          list.scrollTop = 0;
+          syncOverflowCue(list);
+        }
+      }),
+    );
   }
   async function open(item: SidebarAttentionItem) {
     closePanel(false);
@@ -189,10 +195,10 @@ function renderSidebarAttentionContent(props: SidebarAttentionProps, host: HTMLE
       try {
         const { openOwnerInboxAction } =
           await import("../lib/openclaw-id/open-browser-approval.ts");
-        await openOwnerInboxAction(
-          context,
-          item.action,
-          () => isCurrentPanel(generation, scope) && client === context.gateway.snapshot.client,
+        await openOwnerInboxAction(context, item.action, () =>
+          untrack(
+            () => isCurrentPanel(generation, scope) && client === context.gateway.snapshot.client,
+          ),
         );
       } catch (error) {
         showToast({ message: formatUiError(error), severity: "error" });
@@ -289,11 +295,13 @@ function renderSidebarAttentionContent(props: SidebarAttentionProps, host: HTMLE
   }
 
   onSettled(() => {
-    panelDismissals.set(host, () => {
-      const wasOpen = !disposed && panelOpen();
-      closePanel(false);
-      return wasOpen;
-    });
+    panelDismissals.set(host, () =>
+      untrack(() => {
+        const wasOpen = !disposed && panelOpen();
+        closePanel(false);
+        return wasOpen;
+      }),
+    );
     const stopPointer = listen(document, "pointerdown", handleOutsideInteraction, true);
     const stopKeydown = listen(document, "keydown", handleOutsideInteraction, true);
     const stopBlur = listen(window, "blur", handleWindowBlur);

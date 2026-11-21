@@ -1,5 +1,5 @@
 import type { JSX } from "@solidjs/web";
-import { For, Show } from "solid-js";
+import { untrack, For, Show } from "solid-js";
 import { Icon, type IconName } from "../../../components/solid/icon.tsx";
 import { useScrollState } from "../../../components/solid/scroll-state.ts";
 import { registerChatSessionOptionalEnglish } from "../../../i18n/locales/en-chat-session-optional.ts";
@@ -58,7 +58,7 @@ function MobileRow(props: {
   onOpen: (key: string) => void;
   registerOpen: (key: string, button: HTMLButtonElement) => () => void;
 }) {
-  const control = props.createStop(() => props.item.key);
+  const control = untrack(() => props.createStop(() => props.item.key));
   const nameScrollState = useScrollState(true, false);
   const finished = () => ["finished", "failed", "stopped"].includes(props.item.status);
   return (

@@ -20,16 +20,19 @@ import { Menu, type MenuEntry, type MenuHandle } from "./solid/menu.tsx";
 import { ViewerAvatar } from "./solid/viewer-facepile.tsx";
 
 export function AppSidebarOnline(props: { host: AppSidebarRenderHost }) {
-  const host = props.host;
+  const host = () => props.host;
   const sectionId = "online";
-  const snapshot = () => host.sidebarSnapshot;
-  const online = createMemo(() => resolveSidebarOnline(host));
+  const snapshot = () => host().sidebarSnapshot;
+  const online = createMemo(() => resolveSidebarOnline(host()));
   const counts = () => online().counts;
   const listUsers = () => online().listUsers;
   const routing = createMemo(() =>
     personActivityRouting(
-      { basePath: host.basePath, navigate: (route, options) => host.onNavigate?.(route, options) },
-      () => host.dismissTransientMenus(),
+      {
+        basePath: host().basePath,
+        navigate: (route, options) => host().onNavigate?.(route, options),
+      },
+      () => host().dismissTransientMenus(),
     ),
   );
   return (
@@ -38,23 +41,23 @@ export function AppSidebarOnline(props: { host: AppSidebarRenderHost }) {
       aria-label={t("presence.peopleTitle")}
       data-session-section={sectionId}
     >
-      {host.peopleView?.directory()?.loading && (
+      {host().peopleView?.directory()?.loading && (
         <span class="sidebar-session-empty-hint">{t("common.loading")}</span>
       )}
-      {Boolean(host.peopleView?.directory()?.error) && (
+      {Boolean(host().peopleView?.directory()?.error) && (
         <button
           type="button"
           class="sidebar-online__retry"
-          onClick={() => void host.peopleView?.directory()?.load(true)}
+          onClick={() => void host().peopleView?.directory()?.load(true)}
         >
           {t("presence.directoryFailed")}
         </button>
       )}
       {/* The Users section opens on Activity, its overview, above the people. */}
       <div class="sidebar-online__overview">
-        {host.sidebarMenus.renderRoute("activity", host)}
+        {host().sidebarMenus.renderRoute("activity", host())}
         <For
-          each={host
+          each={host()
             .pluginNavigation()
             .filter((entry) => USERS_SECTION_PLUGIN_PAGES.has(entry.key))}
         >
@@ -63,7 +66,7 @@ export function AppSidebarOnline(props: { host: AppSidebarRenderHost }) {
               prop:kind={"navigation"}
               prop:navigationKey={entry.key}
               prop:navigationChildren={false}
-              prop:navigationMenus={host.sidebarMenus}
+              prop:navigationMenus={host().sidebarMenus}
             />
           )}
         </For>
@@ -71,7 +74,7 @@ export function AppSidebarOnline(props: { host: AppSidebarRenderHost }) {
       {/* The people below follow the filter: who is online, or every user. */}
       <div class="sidebar-section-heading">
         <span class="sidebar-recent-sessions__label-text">
-          {host.people.presenceFilter === "online"
+          {host().people.presenceFilter === "online"
             ? t("presence.rosterTitle")
             : t("presence.usersTitle")}
         </span>
@@ -104,7 +107,7 @@ export function AppSidebarOnline(props: { host: AppSidebarRenderHost }) {
             let person: HTMLElement;
             let menu: MenuHandle | undefined;
             const entry = () => `person:${user().identity?.id}`;
-            const pinned = () => host.sidebarEntries.includes(entry());
+            const pinned = () => host().sidebarEntries.includes(entry());
             const openContextMenu = (event: MouseEvent | KeyboardEvent) => {
               const currentMenu = menu;
               if (currentMenu) {
@@ -153,13 +156,13 @@ export function AppSidebarOnline(props: { host: AppSidebarRenderHost }) {
                 onDragStart={(event: DragEvent) => {
                   const identity = user().identity;
                   if (identity?.type === "profile") {
-                    host.sessionOrganizer.startSidebarEntryDrag(event, {
+                    host().sessionOrganizer.startSidebarEntryDrag(event, {
                       type: "person",
                       profileId: identity.id,
                     });
                   }
                 }}
-                onDragEnd={() => host.sessionOrganizer.finishSidebarEntryDrag()}
+                onDragEnd={() => host().sessionOrganizer.finishSidebarEntryDrag()}
               >
                 <Dynamic
                   ref={(element: HTMLElement) => (person = element)}
@@ -229,16 +232,20 @@ export function AppSidebarOnline(props: { host: AppSidebarRenderHost }) {
                     lazy
                     items={items()}
                     ref={(handle) => (menu = handle)}
-                    onBeforeShow={() => host.dismissTransientMenus()}
+                    onBeforeShow={() => host().dismissTransientMenus()}
                     onNavigate={() =>
                       routing().navigate(user().identity!.id, presenceViewerLabel(user()))
                     }
                     onSelect={(item) => {
                       if (item.id === "pin") {
                         if (pinned()) {
-                          host.sessionOrganizer.removeSidebarEntry(entry());
+                          host().sessionOrganizer.removeSidebarEntry(entry());
                         } else {
-                          host.sessionOrganizer.writeSidebarEntryAt(entry(), undefined, undefined);
+                          host().sessionOrganizer.writeSidebarEntryAt(
+                            entry(),
+                            undefined,
+                            undefined,
+                          );
                         }
                       } else if (item.id === "copy") {
                         void copyToClipboard(
@@ -258,11 +265,11 @@ export function AppSidebarOnline(props: { host: AppSidebarRenderHost }) {
           }}
         </For>
       </div>
-      {host.sessionData.ownerCounts.error ? (
+      {host().sessionData.ownerCounts.error ? (
         <button
           type="button"
           class="sidebar-online__retry"
-          onClick={() => void host.sessionData.ownerCounts.refresh()}
+          onClick={() => void host().sessionData.ownerCounts.refresh()}
         >
           {t("presence.sessions.retry")}
         </button>

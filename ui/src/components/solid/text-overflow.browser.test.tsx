@@ -17,11 +17,14 @@ it("keeps full labels and adjacent controls while fading only clipped text in ei
   const long = "release/international-configuration-review-with-complete-filename.ts";
   const [text, setText] = createSignal(long);
   const view = mountSolid(() => (
-    <div style="display:flex;gap:8px;width:180px">
-      <span ref={createTextOverflow(text)} style="overflow:hidden;white-space:nowrap;min-width:0">
+    <div style={{ display: "flex", gap: "8px", width: "180px" }}>
+      <span
+        ref={createTextOverflow(text)}
+        style={{ overflow: "hidden", "white-space": "nowrap", "min-width": "0" }}
+      >
         {text()}
       </span>
-      <button style="flex:none">Open</button>
+      <button style={{ flex: "none" }}>Open</button>
     </div>
   ));
   const label = view.container.querySelector("span")!;

@@ -607,5 +607,5 @@ function AttachmentActionContent(
     observeElement: props.admission.observeElement,
     onFocus: model().resolved?.status === "unavailable" ? undefined : props.admission.onAdmit,
   }));
-  return props.render(action);
+  return <>{props.render(action)}</>;
 }

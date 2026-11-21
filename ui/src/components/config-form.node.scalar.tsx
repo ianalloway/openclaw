@@ -41,7 +41,7 @@ import {
   createSecretFieldHold,
   handleHeldSecretKey,
   SecretFieldFrame,
-  secretInputProps,
+  createSecretInputProps,
   storedSecretState,
 } from "./config-form.secret-field.tsx";
 import { configFieldId, hintForPath, schemaType } from "./config-form.shared.ts";
@@ -525,7 +525,7 @@ function ScalarInput(props: {
     },
   };
   // Secrets stay out of autofill, saved form state, spellcheck services and password managers.
-  const secretProps = secretInputProps(
+  const secretProps = createSecretInputProps(
     () =>
       !props.stepped &&
       (hold.active() ||

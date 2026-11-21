@@ -19,7 +19,7 @@ import {
 import {
   createSecretFieldHold,
   SecretFieldFrame,
-  secretInputProps,
+  createSecretInputProps,
   storedSecretState,
 } from "./config-form.secret-field.tsx";
 import { configFieldId, type JsonSchema } from "./config-form.shared.ts";
@@ -431,7 +431,7 @@ export function JsonTextareaControl(props: {
   const replaceable = () => stored().replaceable;
   const lockedRedacted = () => props.sensitiveState.isRedacted && !replaceable();
   // Secrets stay out of autofill, saved form state, spellcheck services and password managers.
-  const secretProps = secretInputProps(
+  const secretProps = createSecretInputProps(
     () =>
       hold.active() || props.sensitiveState.isSensitiveField || props.sensitiveState.isSensitive,
   );

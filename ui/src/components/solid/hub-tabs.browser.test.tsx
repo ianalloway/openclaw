@@ -123,7 +123,7 @@ it.each(["ltr", "rtl"] as const)(
     document.head.append(styles);
     const [active, setActive] = createSignal("alpha");
     const view = mountSolid(() => (
-      <div dir={direction} style="width:160px">
+      <div dir={direction} style={{ width: "160px" }}>
         <HubTabs
           {...hubProps("reveal", setActive, ["Alpha", "Bravo", "Charlie", "Delta", "Echo"])}
           active={active()}

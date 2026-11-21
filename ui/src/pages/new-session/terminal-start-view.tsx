@@ -1,13 +1,13 @@
 import { For } from "solid-js";
 import { t } from "../../lib/reactive/i18n.ts";
-import { liveValue } from "../../lib/reactive/live-value.ts";
+import { createLiveValueRef } from "../../lib/reactive/live-value.ts";
 import type { NewSessionTerminalHostOptions } from "./terminal-start.ts";
 
 export function NewSessionTerminalHost(props: {
   params: NewSessionTerminalHostOptions;
   ref?: (element: HTMLElement) => void;
 }) {
-  const hostValue = liveValue(() => props.params.hostId);
+  const hostValue = createLiveValueRef(() => props.params.hostId);
   const hidden = () =>
     !props.params.hosts ||
     (props.params.hosts.length === 1 && props.params.hosts[0]?.hostId === props.params.hostId);

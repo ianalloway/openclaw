@@ -1,5 +1,5 @@
 import type { JSX } from "@solidjs/web";
-import { For, Show, type Accessor } from "solid-js";
+import { untrack, For, Show, type Accessor } from "solid-js";
 import { Icon } from "../../../components/solid/icon.tsx";
 import type { MessageGroup } from "../../../lib/chat/chat-types.ts";
 import { resolveIdentityHue } from "../../../lib/identity-avatar.ts";
@@ -88,7 +88,7 @@ export function ChatSessionActivity(props: {
             <Show when={expanded() || !props.options.onToggleToolMessageExpanded}>
               <For each={props.group.messages} keyed={(item) => item.key}>
                 {(item, index) => {
-                  const entry = props.renderEntry(item, index);
+                  const entry = untrack(() => props.renderEntry(item, index));
                   return (
                     <div class="chat-session-activity__message">
                       {entry.content}

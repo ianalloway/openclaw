@@ -27,7 +27,13 @@ it("retires a cancelled lazy setup and opens the current agent with live present
       onClose,
       onError,
     });
-    return discovery.render(() => ({ agentLabel: label(), credentialChoices: [] }));
+    const fixture = {
+      get agentLabel() {
+        return label();
+      },
+      credentialChoices: [],
+    };
+    return discovery.render(() => fixture);
   });
 
   discovery.open();

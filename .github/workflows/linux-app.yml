@@ -163,6 +163,19 @@ jobs:
         working-directory: apps/linux/src-tauri
         run: cargo +stable test --locked --all-targets
 
+      - name: Run Rust tests that require a native display
+        working-directory: apps/linux/src-tauri
+        run: |
+          set -euo pipefail
+          run_native_case() {
+            xvfb-run -a -s '-screen 0 1280x1024x24' dbus-run-session -- \
+              cargo +stable test --locked --bin openclaw-desktop "$1" -- --ignored --exact \
+              | tee "$RUNNER_TEMP/openclaw-native-case.log"
+            grep -F 'test result: ok. 1 passed;' "$RUNNER_TEMP/openclaw-native-case.log"
+          }
+          run_native_case gateway_ws::tests::quickchat_dispatch_rejects_route_change_after_driver_wait
+          run_native_case quickchat_widgets::tests::native_children_revalidate_gateway_before_create_and_show
+
       - name: Build native inline browser candidate
         working-directory: apps/linux/src-tauri
         run: |

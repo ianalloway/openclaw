@@ -1,6 +1,8 @@
 import { cleanup, fireEvent, render } from "@solidjs/testing-library";
 import { createSignal, flush } from "solid-js";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { templateCategories } from "../../lib/template-categories.ts";
+import { IconButton } from "./icon-button.tsx";
 import {
   AgentStartupState,
   LazyElementModal,
@@ -12,6 +14,7 @@ import { LoadingState } from "./loading-state.tsx";
 import { PanelEmptyState } from "./panel-empty-state.tsx";
 import { PanelIconButton } from "./panel-icon-button.tsx";
 import { PanelLoadingSkeleton } from "./panel-loading-skeleton.tsx";
+import { TemplateCategoryIcon } from "./template-category-icon.tsx";
 
 afterEach(cleanup);
 
@@ -170,4 +173,31 @@ describe("Solid presentation primitives", () => {
     expect(click).toHaveBeenCalledOnce();
     expect(original).not.toHaveBeenCalled();
   });
+});
+
+it("keeps an icon button mounted while its tooltip setting changes", () => {
+  const [tooltip, setTooltip] = createSignal<string | false>(false);
+  const view = render(() => <IconButton label="Search" icon="search" tooltip={tooltip()} />);
+  const button = view.getByRole("button", { name: "Search" });
+  expect(button.closest("openclaw-tooltip")).toBeNull();
+  setTooltip("Find a session");
+  flush();
+  expect(button.closest("openclaw-tooltip")).not.toBeNull();
+  setTooltip(false);
+  flush();
+  expect(view.getByRole("button", { name: "Search" })).toBe(button);
+  expect(button.closest("openclaw-tooltip")).toBeNull();
+});
+
+it("switches between the registry icon and catalog-only artwork", () => {
+  const customIcon = templateCategories.find((category) => typeof category[2] !== "string")![2];
+  const [icon, setIcon] = createSignal<(typeof templateCategories)[number][2]>("search");
+  const view = render(() => <TemplateCategoryIcon icon={icon()} />);
+  const initial = view.container.innerHTML;
+  setIcon(customIcon);
+  flush();
+  expect(view.container.innerHTML).not.toBe(initial);
+  setIcon("search");
+  flush();
+  expect(view.container.innerHTML).toBe(initial);
 });

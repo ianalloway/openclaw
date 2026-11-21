@@ -8,7 +8,12 @@ import type {
   LobsterPetLook,
   LobsterPetPaletteId,
 } from "./lobster-pet-contract.ts";
-import { createLobsterPetLook, lobsterLookStyle, lobsterPetName } from "./lobster-pet-identity.ts";
+import {
+  createLobsterPetLook,
+  lobsterCssText,
+  lobsterLookProperties,
+  lobsterPetName,
+} from "./lobster-pet-identity.ts";
 import type { LobsterPetOwner } from "./lobster-pet-owner.ts";
 import { lobsterLanePoint, lobsterTravelDuration } from "./lobster-pet-scene.ts";
 import { Balloon, BottleSvg, PASSER_SPRITES, PASSER_TITLES } from "./lobster-pet-sprites.tsx";
@@ -44,12 +49,21 @@ function lobsterPetSpriteStyle(
   spotPct: number,
   facing: 1 | -1,
 ) {
-  return [
-    lobsterLookStyle(look),
-    `--lob-scale:${scale}`,
-    `--lob-x:${spotPct}%`,
-    `--lob-face:${facing}`,
-  ].join(";");
+  return lobsterCssText(lobsterPetSpriteProperties(look, scale, spotPct, facing));
+}
+
+function lobsterPetSpriteProperties(
+  look: LobsterPetLook,
+  scale: number,
+  spotPct: number,
+  facing: 1 | -1,
+) {
+  return {
+    ...lobsterLookProperties(look),
+    "--lob-scale": String(scale),
+    "--lob-x": `${spotPct}%`,
+    "--lob-face": String(facing),
+  };
 }
 
 export type LobsterPetSceneProps = NonNullable<ReturnType<LobsterPetOwner["snapshot"]>["scene"]>;
@@ -157,25 +171,25 @@ function Sprite(props: LobsterPetSceneProps & { twin: boolean }) {
             <span class="lobster-pet__entry-bubble" />
           </Show>
           <Show when={props.look.shiny}>
-            <span class="lobster-pet__sparkle" style="--i:0;left:12%;bottom:64%">
+            <span class="lobster-pet__sparkle" style={{ "--i": "0", left: "12%", bottom: "64%" }}>
               ✦
             </span>
-            <span class="lobster-pet__sparkle" style="--i:1;left:76%;bottom:82%">
+            <span class="lobster-pet__sparkle" style={{ "--i": "1", left: "76%", bottom: "82%" }}>
               ✦
             </span>
           </Show>
-          <span class="lobster-pet__z" style="--i:0">
+          <span class="lobster-pet__z" style={{ "--i": "0" }}>
             z
           </span>
-          <span class="lobster-pet__z" style="--i:1">
+          <span class="lobster-pet__z" style={{ "--i": "1" }}>
             z
           </span>
-          <span class="lobster-pet__z" style="--i:2">
+          <span class="lobster-pet__z" style={{ "--i": "2" }}>
             Z
           </span>
-          <span class="lobster-pet__bubble" style="--i:0" />
-          <span class="lobster-pet__bubble" style="--i:1" />
-          <span class="lobster-pet__bubble" style="--i:2" />
+          <span class="lobster-pet__bubble" style={{ "--i": "0" }} />
+          <span class="lobster-pet__bubble" style={{ "--i": "1" }} />
+          <span class="lobster-pet__bubble" style={{ "--i": "2" }} />
           <span class="lobster-pet__heart">♥</span>
           <svg class="lobster-pet__broom" viewBox="0 0 24 40" aria-hidden="true">
             <path d="M12 2 L12 24" stroke="#8a5a2b" stroke-width="3" stroke-linecap="round" />
@@ -221,7 +235,7 @@ function Scene(args: LobsterPetSceneProps) {
     // easter-egg button would degrade keyboard flow.
     const showBottle = args.bottle !== null && args.visitsEnabled && !args.dismissed;
     // The abandoned shell: the pre-molt silhouette, frozen and slowly fading.
-    const shellStyle = lobsterPetSpriteStyle(
+    const shellStyle = lobsterPetSpriteProperties(
       args.look,
       args.shellScale,
       args.shellSpotPct,
@@ -286,7 +300,11 @@ function Scene(args: LobsterPetSceneProps) {
       <Show when={view().showShell}>
         <div
           class="lobster-pet lobster-pet--shell"
-          style={`${view().shellStyle};--lob-x:${view().shellPoint.x}px;--lob-y:${view().shellPoint.y}px`}
+          style={{
+            ...view().shellStyle,
+            "--lob-x": `${view().shellPoint.x}px`,
+            "--lob-y": `${view().shellPoint.y}px`,
+          }}
           aria-hidden="true"
         >
           <div class="lobster-pet__body">
@@ -298,7 +316,7 @@ function Scene(args: LobsterPetSceneProps) {
         {(bottle) => (
           <div
             class={["lobster-bottle", { "lobster-bottle--open": bottle().opened }]}
-            style={`--lob-x:${view().bottlePoint.x}px`}
+            style={{ "--lob-x": `${view().bottlePoint.x}px` }}
             title={bottle().opened ? bottle().fortune : "a message in a bottle"}
             aria-hidden="true"
             onPointerDown={() => args.onBottleOpen()}

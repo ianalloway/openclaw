@@ -58,7 +58,7 @@ it("loads permission recovery for tool cards, tool messages, and notices with cu
       });
       const [retry, setRetry] = createSignal<(message: string) => void>(() => previousRetry);
       replaceRequest = () => {
-        setRequest({ ...request(), nodeId: "current-mac", nodeName: "Current Mac" });
+        setRequest((previous) => ({ ...previous, nodeId: "current-mac", nodeName: "Current Mac" }));
         setRetry(() => currentRetry);
       };
       const card = () => ({

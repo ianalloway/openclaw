@@ -1,4 +1,4 @@
-import { createMemo, createSignal, onSettled, Show } from "solid-js";
+import { createMemo, createSignal, onSettled, Show, untrack } from "solid-js";
 import { formatUiError } from "../lib/format-error.ts";
 import { projectGateway } from "../lib/reactive/application.ts";
 import { readSessionMethodAccess } from "../lib/session-method-access.ts";
@@ -15,8 +15,8 @@ export default function SidebarSessionRename(props: {
   onClose(): void;
 }) {
   // Presentation is bound to the instance captured by the double-click, not a later row.
-  const target = props.session;
-  const context = props.host.sessionDataContext;
+  const target = untrack(() => props.session);
+  const context = untrack(() => props.host.sessionDataContext);
   const sessions = context?.sessions;
   const gateway = context && projectGateway(context.gateway);
   const client = context?.gateway.snapshot.client;

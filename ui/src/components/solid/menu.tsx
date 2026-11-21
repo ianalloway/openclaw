@@ -416,14 +416,16 @@ export function Menu(props: BranchProps): JSX.Element {
     let disconnectSpacing: (() => void) | undefined;
     const disconnectControl = control.connect(
       () =>
-        props.ref?.({
-          overlay,
-          open: () => overlay.request(true, "first"),
-          close: () => overlay.request(false, "return"),
-          focusFirst: () => focusItem("first"),
-          itemElements: ownItems,
-          itemElement: (id) => ownItems().find((item) => item.dataset.value === id),
-        }),
+        untrack(() =>
+          props.ref?.({
+            overlay,
+            open: () => overlay.request(true, "first"),
+            close: () => overlay.request(false, "return"),
+            focusFirst: () => focusItem("first"),
+            itemElements: ownItems,
+            itemElement: (id) => ownItems().find((item) => item.dataset.value === id),
+          }),
+        ),
       (open) => {
         disconnectSpacing?.();
         disconnectSpacing = open ? observeMenuSpacing(surface) : undefined;

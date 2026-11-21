@@ -1,4 +1,3 @@
-import type { JSX } from "@solidjs/web";
 import {
   action,
   createOptimistic,
@@ -50,6 +49,7 @@ import {
   type CloudWorkerProfileDraft,
   type ConfiguredCloudWorkerProfile,
 } from "./cloud-worker-config.ts";
+import { createCloudWorkerDraftInput } from "./cloud-worker-draft-input.tsx";
 import { CloudWorkerEnvironments } from "./cloud-worker-environments.tsx";
 import { CloudWorkerMachineClass } from "./cloud-worker-machine-class.tsx";
 
@@ -433,45 +433,7 @@ export function CloudWorkersPage() {
     );
   }
 
-  function renderDraftInput(
-    field:
-      | "id"
-      | "backend"
-      | "ttl"
-      | "idleTimeout"
-      | "binary"
-      | "setupEnv"
-      | "readyWorkers"
-      | "suspendAfter",
-    options: {
-      description?: JSX.Element;
-      placeholder?: string;
-      type?: "text" | "number";
-    } = {},
-  ) {
-    const label = field === "id" ? "profileId" : field;
-    return (
-      <SettingsRow
-        title={t(`cloudWorkersPage.fields.${label}`)}
-        description={options.description ?? t(`cloudWorkersPage.fields.${label}Help`)}
-        control={
-          <input
-            class="settings-input mono"
-            aria-label={t(`cloudWorkersPage.fields.${label}`)}
-            placeholder={options.placeholder}
-            type={options.type}
-            min={field === "readyWorkers" ? "0" : undefined}
-            step={field === "readyWorkers" ? "1" : undefined}
-            autocomplete="off"
-            spellcheck="false"
-            value={view.draft[field]}
-            disabled={saving()}
-            onInput={(event) => patchDraft({ [field]: event.currentTarget.value })}
-          />
-        }
-      />
-    );
-  }
+  const renderDraftInput = createCloudWorkerDraftInput(() => view.draft, saving, patchDraft);
 
   function Editor() {
     const editing = () => view.editor?.kind === "edit";

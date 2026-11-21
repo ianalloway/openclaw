@@ -1,6 +1,6 @@
 /* @vitest-environment jsdom */
 
-import { flush, createSignal, onSettled } from "solid-js";
+import { untrack, flush, createSignal, onSettled } from "solid-js";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { Icon } from "../../components/solid/icon.tsx";
 import { i18n } from "../../i18n/index.ts";
@@ -32,11 +32,13 @@ async function mount(props: PluginCatalogResultsProps) {
     flush();
   });
   flush();
+  const hasBrowse = untrack(() => Boolean(props.reads.browse));
+  const hasCategories = untrack(() => Boolean(props.reads.categories));
   await waitForSolid(() => {
-    if (!props.reads.browse) {
+    if (!hasBrowse) {
       expect(view.container.querySelector(".plugin-catalog-grid--skeleton")).toBeNull();
     }
-    if (!props.reads.categories) {
+    if (!hasCategories) {
       expect(view.container.querySelector(".plugin-catalog-chip--skeleton")).toBeNull();
     }
   });

@@ -1,5 +1,5 @@
 import type { JSX } from "@solidjs/web";
-import { createMemo, For, mapArray, merge, Show } from "solid-js";
+import { untrack, createMemo, For, mapArray, merge, Show } from "solid-js";
 import type { AgentIdentityResult, GatewayAgentRow } from "../api/types.ts";
 import type { NavigationRouteId } from "../app-navigation.ts";
 import { pathForAgentPanel } from "../app-route-paths.ts";
@@ -146,7 +146,9 @@ function renderAgentRow(
     get disabled() {
       return pending();
     },
-    id: `${AGENT_VALUE_PREFIX}${encodeURIComponent(agentId())}`,
+    get id() {
+      return `${AGENT_VALUE_PREFIX}${encodeURIComponent(agentId())}`;
+    },
     get label() {
       return [label(), unread() > 0 ? t("sessionsView.unread") : null].filter(Boolean).join(" ");
     },
@@ -252,7 +254,8 @@ function renderSidebarAgentMenuSwitcher(
   // Embedded controls share their agent row's lifetime, not an inventory refresh.
   const rows = mapArray(
     agents,
-    (agent) => renderAgentRow(agent, params, () => agent() === autofocusAgent(), controls),
+    (agent) =>
+      untrack(() => renderAgentRow(agent, params, () => agent() === autofocusAgent(), controls)),
     { keyed: (agent) => agent.id },
   );
   return () => [...(agents().length > 1 ? [allAgents] : []), ...rows()];

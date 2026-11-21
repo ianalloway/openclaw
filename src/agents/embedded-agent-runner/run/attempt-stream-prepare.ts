@@ -48,6 +48,7 @@ import {
   steerActiveSessionWithOptionalDeliveryWait,
 } from "./attempt-queue-message.js";
 import {
+  isAttemptSteeringAdmissionOpen,
   withEmbeddedAttemptSteeringAdmission,
   type EmbeddedAttemptSteeringAdmission,
 } from "./attempt-steering-admission.js";
@@ -88,15 +89,7 @@ function prepareStream(
     | { assistant: AssistantMessage; presentation: MessagePresentation }
     | undefined;
   let activeQueueAdmissions = 0;
-  const isSteeringAdmissionOpen = () => {
-    const state = input.getRunState();
-    return (
-      admission.accepting &&
-      !state.aborted &&
-      !state.yieldDetected &&
-      !input.runAbortController.signal.aborted
-    );
-  };
+  const isSteeringAdmissionOpen = () => isAttemptSteeringAdmissionOpen(admission, input);
   const shouldRunBeforeAgentFinalize =
     attempt.operation !== "settled-tool-finalization" &&
     hookRunner?.hasHooks("before_agent_finalize");

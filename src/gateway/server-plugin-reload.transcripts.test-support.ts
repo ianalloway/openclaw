@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { expect, vi } from "vitest";
+import type { OpenClawConfig } from "../config/types.openclaw.js";
 import { racePromiseWithAbortSignal } from "../infra/abort-signal.js";
 import type { OpenClawPluginApi } from "../plugins/types.js";
 import { AsyncWorkScope } from "../shared/async-work-scope.js";
@@ -178,4 +179,29 @@ export function createTranscriptFixtures() {
       providers[owner].push(registerTranscriptFixture(api, owner));
     },
   };
+}
+
+export function transcriptSource(providerId: string, channelId = "original-room") {
+  return { providerId, guildId: "guild", channelId, whenOccupied: true };
+}
+
+type TranscriptProvider = ReturnType<typeof registerTranscriptFixture>;
+
+export function expectWatch(
+  provider: TranscriptProvider,
+  config: OpenClawConfig,
+  channelId: string,
+  index = -1,
+) {
+  const watch = provider.watches.at(index);
+  expect([watch?.cfg, watch?.source.channelId]).toEqual([config, channelId]);
+}
+
+export async function stopTranscripts(
+  sidecars: Pick<Awaited<ReturnType<typeof startTranscriptReloadFixtureSidecars>>, "stop">,
+  sibling: TranscriptProvider,
+) {
+  await sidecars.stop();
+  expect(activeSessions.size).toBe(0);
+  expect(sibling.unwatch).toHaveBeenCalledOnce();
 }

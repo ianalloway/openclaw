@@ -234,7 +234,7 @@ export function storedSecretState(
 }
 
 /** Keeps a secret out of autofill, saved form state, spellcheck services and password managers. */
-export function secretInputProps(isSecret: () => boolean) {
+export function createSecretInputProps(isSecret: () => boolean) {
   const when = <T,>(value: T) => (isSecret() ? value : undefined);
   return {
     get autocomplete() {
@@ -320,3 +320,5 @@ export function SecretFieldFrame(props: {
     </Show>
   );
 }
+
+export { createSecretInputProps as secretInputProps };

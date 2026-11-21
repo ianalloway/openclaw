@@ -246,6 +246,7 @@ it("keeps native file navigation and selection while windowing a large leaf fold
   let savedTop = 0;
   const workspace = (): SessionWorkspaceProps => {
     revision();
+    const offset = fileOffset();
     return {
       sessionKey: "main",
       presentation: "desktop",
@@ -291,8 +292,8 @@ it("keeps native file navigation and selection while windowing a large leaf fold
             path: "docs",
             entries: [
               ...Array.from({ length: fileCount() }, (_, index) => ({
-                path: filename(index + fileOffset()),
-                name: filename(index + fileOffset())
+                path: filename(index + offset),
+                name: filename(index + offset)
                   .split("/")
                   .at(-1)!,
                 kind: "file" as const,

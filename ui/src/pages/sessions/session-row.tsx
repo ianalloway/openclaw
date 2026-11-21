@@ -2,7 +2,7 @@ import {
   normalizeFastMode,
   normalizeOptionalString,
 } from "@openclaw/normalization-core/string-coerce";
-import { createMemo, Errored, For, isPending, latest, Loading, Show } from "solid-js";
+import { untrack, createMemo, Errored, For, isPending, latest, Loading, Show } from "solid-js";
 import { formatAgentRuntimeLabel } from "../../../../src/shared/agent-runtime-display.js";
 import { formatFastModeValue } from "../../../../src/shared/fast-mode.js";
 import {
@@ -295,7 +295,7 @@ export function SessionRows(props: SessionsProps & { row: GatewaySessionRow; row
     return handleContextMenuEvent(
       event,
       event instanceof KeyboardEvent ? menuTrigger : null,
-      (trigger, x, y) => props.onOpenSessionMenu(row(), { x, y }, trigger),
+      (trigger, x, y) => untrack(() => props.onOpenSessionMenu(row(), { x, y }, trigger)),
     );
   };
 

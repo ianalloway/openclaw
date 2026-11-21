@@ -1,5 +1,6 @@
 import { onSettled, Show } from "solid-js";
 import { t } from "../lib/reactive/i18n.ts";
+import type { OverlayNativeAdapter } from "./overlay-types.ts";
 import { Icon } from "./solid/icon.tsx";
 import { createPhoneSheetLayout } from "./solid/phone-sheet-layout.ts";
 
@@ -70,3 +71,13 @@ export function createPickerPhoneSheet(options: {
     ),
   };
 }
+
+export const pickerSheetAdapter: OverlayNativeAdapter = {
+  isOpen: (surface) => !surface.hidden,
+  show: (surface) => {
+    surface.hidden = false;
+  },
+  hide: (surface) => {
+    surface.hidden = true;
+  },
+};

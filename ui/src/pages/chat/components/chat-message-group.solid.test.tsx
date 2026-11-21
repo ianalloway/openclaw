@@ -344,11 +344,11 @@ it("keeps frame stream options narrow and live through replacement and first-bub
   const [frame, setFrame] = createSignal(initialFrame);
   const view = mountSolid(() => {
     const options = createMemo<Parameters<typeof AgentRunFrame>[0]["options"]>(() => {
-      const currentStreamOptions = streamOptions();
+      const initialStreamOptions = streamOptions();
       return {
-        streamOptions: currentStreamOptions,
+        streamOptions: initialStreamOptions,
         workPreviews: new Map(),
-        partDependencies: (part) => [part, currentStreamOptions],
+        partDependencies: (part) => [part, initialStreamOptions],
         renderGroupOptions: () => ({ showReasoning: false }),
         isWorkExpanded: () => false,
         onToggleWork: () => {},

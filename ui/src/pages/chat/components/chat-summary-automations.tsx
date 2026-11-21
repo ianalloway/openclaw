@@ -1,5 +1,6 @@
 import type { JSX } from "@solidjs/web";
 import {
+  untrack,
   Errored,
   For,
   Loading,
@@ -132,12 +133,15 @@ export function createSessionAutomationInventory(
         : undefined;
     next.cronJobsSortBy = "name";
     next.canRefresh = () =>
-      cron === next &&
-      visible() &&
-      Boolean(next.cronSessionFilter) &&
-      canCallGatewayMethod(source?.snapshot, "cron.list", "operator.read", {
-        requireAdvertisement: false,
-      });
+      untrack(
+        () =>
+          cron === next &&
+          visible() &&
+          Boolean(next.cronSessionFilter) &&
+          canCallGatewayMethod(source?.snapshot, "cron.list", "operator.read", {
+            requireAdvertisement: false,
+          }),
+      );
     const nextPresentationScope = source ? gatewayPresentationScope(source).key : 0;
     if (
       retain &&
@@ -225,32 +229,41 @@ export function createSessionAutomationInventory(
           // committed value while an async frame holds the write, and reading it here throws.
           const current = () => gateway() === source && sessionKey() === key;
           // Connection publications retire request scopes before the next cron event is delivered.
-          const unsubscribe = source.subscribe((snapshot) => {
-            if (!current()) {
-              return;
-            }
-            const nextIdentity = JSON.stringify(resolveUiConversationIdentity(snapshot, key));
-            const changed = connection.transition(snapshot);
-            const nextReadAccess = canPresentGatewayMethod(snapshot, "cron.list", "operator.read", {
-              requireAdvertisement: false,
-            });
-            if (changed || identity !== nextIdentity || readAccess !== nextReadAccess) {
-              reset(source, key, identity === nextIdentity && readAccess === nextReadAccess);
-              identity = nextIdentity;
-            }
-            if (dirty && !retryPending && !cron.cronJobsReadDenied) {
-              void load();
-            }
-          });
-          const unsubscribeEvents = source.subscribeEvents((event) => {
-            if (
-              current() &&
-              (event.event === "cron" || isCronInventoryInvalidation(event, source.snapshot))
-            ) {
-              dirty = true;
-              void load({ event: event.event === "cron" ? event.payload : undefined });
-            }
-          });
+          const unsubscribe = source.subscribe((snapshot) =>
+            untrack(() => {
+              if (!current()) {
+                return;
+              }
+              const nextIdentity = JSON.stringify(resolveUiConversationIdentity(snapshot, key));
+              const changed = connection.transition(snapshot);
+              const nextReadAccess = canPresentGatewayMethod(
+                snapshot,
+                "cron.list",
+                "operator.read",
+                {
+                  requireAdvertisement: false,
+                },
+              );
+              if (changed || identity !== nextIdentity || readAccess !== nextReadAccess) {
+                reset(source, key, identity === nextIdentity && readAccess === nextReadAccess);
+                identity = nextIdentity;
+              }
+              if (dirty && !retryPending && !cron.cronJobsReadDenied) {
+                void load();
+              }
+            }),
+          );
+          const unsubscribeEvents = source.subscribeEvents((event) =>
+            untrack(() => {
+              if (
+                current() &&
+                (event.event === "cron" || isCronInventoryInvalidation(event, source.snapshot))
+              ) {
+                dirty = true;
+                void load({ event: event.event === "cron" ? event.payload : undefined });
+              }
+            }),
+          );
           void load();
           return () => {
             unsubscribe();

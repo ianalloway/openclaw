@@ -11,7 +11,7 @@ import { keyboardHints } from "../../lib/keyboard-hints.ts";
 import { KEYBOARD_SHORTCUT_COMBOS } from "../../lib/keyboard-shortcut-contract.ts";
 import { elementRef } from "../../lib/reactive/element-ref.ts";
 import { t } from "../../lib/reactive/i18n.ts";
-import { nativeListener } from "../../lib/solid-native-listener.ts";
+import { createNativeListenerRef } from "../../lib/solid-native-listener.ts";
 import { resolvePaletteSessionSettings, type SettingsOptions } from "./palette-session-settings.ts";
 import { createPresentationAction } from "./submission-action.ts";
 import { repositoryIssueText } from "./submit-gates.ts";
@@ -94,7 +94,7 @@ export function PaletteSessionSettingsView(properties: {
       unregister();
     };
   });
-  const keydown = nativeListener("keydown", (event) => {
+  const keydown = createNativeListenerRef("keydown", (event) => {
     if (event.defaultPrevented || event.isComposing || event.keyCode === 229) {
       return;
     }
@@ -160,7 +160,7 @@ export function PaletteSessionSettingsView(properties: {
     (owner) => owner.reportFailure(),
   );
   const save = async (operation: () => Promise<void> | undefined) => submit(operation);
-  const retry = nativeListener(
+  const retry = createNativeListenerRef(
     "click",
     () => void save(() => properties.options.preferences.retry()),
   );
@@ -175,8 +175,8 @@ export function PaletteSessionSettingsView(properties: {
         focusTargets[focusTarget]?.focus({ preventScroll: true });
       }
     });
-    const back = nativeListener("click", () => showPlaces(false));
-    const connect = nativeListener("click", () => properties.options.onConnectMachine());
+    const back = createNativeListenerRef("click", () => showPlaces(false));
+    const connect = createNativeListenerRef("click", () => properties.options.onConnectMachine());
     return (
       <>
         <HeaderSearch
@@ -265,7 +265,9 @@ export function PaletteSessionSettingsView(properties: {
               ? properties.options.draft.place.freshWorkspace
               : properties.options.draft.place.folder ===
                 properties.options.draft.place.workspacePath())));
-    const choose = nativeListener("click", () => selectMachine(props.machine, props.choice.id));
+    const choose = createNativeListenerRef("click", () =>
+      selectMachine(props.machine, props.choice.id),
+    );
     const row = () => (
       <button
         type="button"
@@ -323,8 +325,10 @@ export function PaletteSessionSettingsView(properties: {
       };
     });
     const place = () => properties.options.draft.place;
-    const workspace = nativeListener("click", (event) => showPlaces(true, event.detail > 0));
-    const worktree = nativeListener("click", () => {
+    const workspace = createNativeListenerRef("click", (event) =>
+      showPlaces(true, event.detail > 0),
+    );
+    const worktree = createNativeListenerRef("click", () => {
       place().selectWorktree(!place().worktree);
       properties.options.onChange();
     });

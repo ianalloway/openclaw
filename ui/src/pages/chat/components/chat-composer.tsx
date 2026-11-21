@@ -77,12 +77,14 @@ function PaneComposer(props: ChatComposerProps & { questions: ComposerQuestions 
   const voice = { dictation: state.dictation, picker: microphonePicker };
   // Dictation admission invalidates edits and dismisses errors before the next input event.
   onSettled(() =>
-    voice.dictation.subscribe(() => {
-      if (voice.dictation.locksComposer) {
-        state.editRevision += 1;
-        currentProps.onDismissRealtimeTalkError?.();
-      }
-    }),
+    voice.dictation.subscribe(() =>
+      untrack(() => {
+        if (voice.dictation.locksComposer) {
+          state.editRevision += 1;
+          currentProps.onDismissRealtimeTalkError?.();
+        }
+      }),
+    ),
   );
   const dictation = projectOwner(voice.dictation, (owner) => owner);
   const microphone = projectOwner(voice.picker, (owner) => owner);
@@ -171,22 +173,24 @@ function PaneComposer(props: ChatComposerProps & { questions: ComposerQuestions 
       return undefined;
     }
     let active = true;
-    const access = state.mentionMenu.externalAccess(() => {
-      if (!active) {
-        return undefined;
-      }
-      const current = context();
-      return {
-        directory: current.mentionDirectory,
-        host:
-          current.mentionDirectory &&
-          !state.composerComposing &&
-          !state.dictation?.locksComposer &&
-          state.composerTextarea?.isConnected
-            ? current.mentionMenuHost
-            : undefined,
-      };
-    });
+    const access = state.mentionMenu.externalAccess(() =>
+      untrack(() => {
+        if (!active) {
+          return undefined;
+        }
+        const current = context();
+        return {
+          directory: current.mentionDirectory,
+          host:
+            current.mentionDirectory &&
+            !state.composerComposing &&
+            !state.dictation?.locksComposer &&
+            state.composerTextarea?.isConnected
+              ? current.mentionMenuHost
+              : undefined,
+        };
+      }),
+    );
     const release = register(access);
     return () => {
       active = false;
@@ -229,6 +233,6 @@ function PaneComposer(props: ChatComposerProps & { questions: ComposerQuestions 
       mentionError: current.mentionError,
     };
   });
-  const viewContext = merge(context, scalarContext);
+  const viewContext = merge(() => context(), scalarContext);
   return renderChatComposerView(() => viewContext, currentProps, state);
 }

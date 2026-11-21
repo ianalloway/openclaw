@@ -674,7 +674,7 @@ export function SidebarUpdateCard(
   return (
     <openclaw-sidebar-update-card
       ref={(element) => (host = element)}
-      style="display: contents"
+      style={{ display: "contents" }}
       class={props.class}
       data-attention-kind={props["data-attention-kind"]}
     >

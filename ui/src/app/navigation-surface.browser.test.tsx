@@ -30,14 +30,14 @@ describe.skipIf(!hasBrowserLayout)("navigation surface browser layout", () => {
     mountSolid(() => (
       <div
         class="shell shell--navigation-rail shell--nav-collapsed"
-        style="animation: none; --shell-nav-rail-width: 52px"
+        style={{ animation: "none", "--shell-nav-rail-width": "52px" }}
       >
         <div class="shell-chrome-controls">
           <button
             class="shell-chrome-controls__button shell-chrome-controls__search"
             type="button"
             aria-label="Search"
-          ></button>
+          />
         </div>
         <main class="content">
           <FloatingUpdateCard
@@ -45,7 +45,7 @@ describe.skipIf(!hasBrowserLayout)("navigation surface browser layout", () => {
             mobileNavLayout={false}
             onboarding={false}
             refreshRequired={true}
-            onRefresh={async () => false}
+            onRefresh={() => Promise.resolve(false)}
           />
         </main>
       </div>

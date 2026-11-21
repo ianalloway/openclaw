@@ -30,9 +30,14 @@ export const WorkspaceIcon: WorkspaceIconView = defineSolidBridge<WorkspaceIconP
     });
     const blobUrl = createMemo(() => {
       revision();
+      const route = props.routeUrl;
+      const activeRoute =
+        route && props.authReady && undecodableRouteUrl() !== route
+          ? { route, tokens: props.authTokens, connectionId: props.connectionId }
+          : null;
       return loader.withActiveRoutes(() =>
-        props.routeUrl && props.authReady && undecodableRouteUrl() !== props.routeUrl
-          ? loader.resolve(props.routeUrl, props.authTokens, props.connectionId)
+        activeRoute
+          ? loader.resolve(activeRoute.route, activeRoute.tokens, activeRoute.connectionId)
           : null,
       );
     });

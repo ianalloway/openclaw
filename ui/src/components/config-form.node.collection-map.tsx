@@ -2,7 +2,7 @@ import type { JSX } from "@solidjs/web";
 import { For, Show, createMemo, createSignal } from "solid-js";
 import { containsRedactedSentinel, copyWithPathPatch } from "../lib/config-form-utils.ts";
 import { t } from "../lib/reactive/i18n.ts";
-import { liveValue } from "../lib/reactive/live-value.ts";
+import { createLiveValueRef } from "../lib/reactive/live-value.ts";
 import { createProgressiveList } from "../lib/reactive/progressive-list.ts";
 import {
   ConfigCollectionDraft,
@@ -72,7 +72,7 @@ function ConfigMapRow(
   const valuePath = createMemo(() => [...props.params.path, key()]);
   const errorId = createMemo(() => configFieldId(valuePath(), "key-error"));
   const [renameError, setRenameError] = createSignal("");
-  const keyValue = liveValue<HTMLInputElement>(() => key());
+  const keyValue = createLiveValueRef<HTMLInputElement>(() => key());
   const sensitiveState = createMemo(
     () =>
       getSensitiveRenderState({

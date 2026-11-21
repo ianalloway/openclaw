@@ -2,13 +2,13 @@
 import { onSettled } from "solid-js";
 import { icons } from "../../components/icons.tsx";
 import { t } from "../../i18n/index.ts";
-import { workboardViewState, type WorkboardProps } from "./view-helpers.tsx";
+import { readWorkboardViewState, type WorkboardProps } from "./view-helpers.tsx";
 
 export function WorkboardSearch(props: {
   workboard: WorkboardProps;
   onFocusTarget?: (element: HTMLElement) => void;
 }) {
-  const state = workboardViewState(() => props.workboard);
+  const state = () => readWorkboardViewState(props.workboard);
   let pendingFocus: { target: "input" | "trigger"; previous: Element | null } | undefined;
   const focusMounted = (target: "input" | "trigger", element: HTMLElement) => {
     if (pendingFocus?.target !== target) {

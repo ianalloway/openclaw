@@ -143,7 +143,7 @@ function renderConfirmation(props: () => ConfirmationProps) {
 
 export function GatewayUrlConfirmation(input: { props?: ConfirmationProps }) {
   return (
-    <openclaw-gateway-url-confirmation style="display: contents">
+    <openclaw-gateway-url-confirmation style={{ display: "contents" }}>
       <Show when={input.props?.pendingGatewayUrl ? input.props : undefined}>
         {(confirmation) => renderConfirmation(confirmation)}
       </Show>

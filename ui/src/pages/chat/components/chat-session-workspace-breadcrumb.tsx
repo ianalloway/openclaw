@@ -71,12 +71,12 @@ export function WorkspaceBreadcrumb(props: {
       width -= elements.get(entry.path)?.offsetWidth ?? 0;
       next.push(entry.path);
     }
-    const fullName = name();
+    const initialName = name();
     const room = Math.max(0, available - (width - nameWidth));
     if (nameWidth <= room) {
       return () => {
         setHidden(next);
-        setDisplayName(fullName);
+        setDisplayName(initialName);
       };
     }
     textMeasure ??= document.createElement("canvas").getContext("2d");
@@ -84,7 +84,7 @@ export function WorkspaceBreadcrumb(props: {
       return () => setHidden(next);
     }
     textMeasure.font = getComputedStyle(current).font;
-    const { stem, extension } = splitWorkspaceFilename(fullName);
+    const { stem, extension } = splitWorkspaceFilename(initialName);
     const characters = Array.from(stem);
     let low = 0;
     let high = characters.length - 1;

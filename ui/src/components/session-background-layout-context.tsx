@@ -20,8 +20,9 @@ export function SessionBackgroundLayoutScope(props: { children: JSX.Element }) {
     { shallow: true },
   );
   let nextRegistration = 0;
+  const registeredTargets = createMemo(() => Object.values(targets));
   const scope = {
-    targets: createMemo(() => Object.values(targets)),
+    targets: registeredTargets,
     register(target: SessionBackgroundLayoutTarget) {
       const registration = nextRegistration++;
       setTargets((draft) => {

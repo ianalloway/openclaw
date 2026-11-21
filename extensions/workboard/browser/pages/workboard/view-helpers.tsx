@@ -62,11 +62,12 @@ export type WorkboardProps = {
 };
 
 export function workboardViewState(owner: () => Pick<WorkboardProps, "host" | "revision">) {
-  return () => {
-    const props = owner();
-    void props.revision;
-    return getWorkboardState(props.host);
-  };
+  return () => readWorkboardViewState(owner());
+}
+
+export function readWorkboardViewState(owner: Pick<WorkboardProps, "host" | "revision">) {
+  void owner.revision;
+  return getWorkboardState(owner.host);
 }
 
 const eventLabelKeys: Record<WorkboardEvent["kind"], string> = {

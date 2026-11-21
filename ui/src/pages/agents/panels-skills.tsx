@@ -62,16 +62,21 @@ export function AgentSkills(params: AgentSkillsProps) {
         const report = createDeferred<
           { report: SkillStatusReport | null; error?: string } | undefined
         >(
-          async () => {
+          () => {
             const read = issued();
-            const fallback = cached();
+            const initialReport = cached();
+            const onFailure = (error: unknown) => ({
+              report: initialReport,
+              error: formatUiError(error),
+            });
             try {
-              return {
-                report:
-                  read?.agentId === params.agentId ? ((await read.result) ?? fallback) : fallback,
-              };
+              const receipt = read?.agentId === params.agentId ? read?.result : undefined;
+              return Promise.resolve(receipt).then(
+                (result) => ({ report: result ?? initialReport }),
+                onFailure,
+              );
             } catch (error) {
-              return { report: fallback, error: formatUiError(error) };
+              return Promise.resolve(onFailure(error));
             }
           },
           { loadingValue: undefined },

@@ -8,7 +8,7 @@ import { renderSessionOwnerAvatar, renderSessionOwnerChip } from "./session-pres
 
 registerSessionMenuEnglish();
 
-export function SidebarMenuRadioItem(params: {
+export function buildSidebarMenuRadioItem(params: {
   value: string;
   checked: boolean;
   label: string;
@@ -29,13 +29,13 @@ export function SidebarMenuRadioItem(params: {
   };
 }
 
-export function SidebarOwnerOptions(params: {
+export function buildSidebarOwnerOptions(params: {
   owners: readonly SessionOwnerOption[];
   ownerFilterId: string | null;
   selfOwnerId: string | null;
 }): MenuItem[] {
   return params.owners.map((owner) =>
-    SidebarMenuRadioItem({
+    buildSidebarMenuRadioItem({
       value: `owner:${owner.id}`,
       checked: params.ownerFilterId === owner.id,
       label:
@@ -47,7 +47,7 @@ export function SidebarOwnerOptions(params: {
   );
 }
 
-export function SidebarOwnerFilter(params: {
+export function buildSidebarOwnerFilter(params: {
   owners: readonly SessionOwnerOption[];
   ownerFilterId: string | null;
   involvingMe: boolean;
@@ -73,12 +73,12 @@ export function SidebarOwnerFilter(params: {
         </>
       ),
     },
-    SidebarMenuRadioItem({
+    buildSidebarMenuRadioItem({
       value: "owner:",
       checked: params.ownerFilterId === null && !params.involvingMe,
       label: t("sessionsView.allOwners"),
     }),
-    SidebarMenuRadioItem({
+    buildSidebarMenuRadioItem({
       value: "involving-me",
       checked: params.involvingMe,
       label: t("sessionsView.involvingMe"),
@@ -91,7 +91,7 @@ export function SidebarOwnerFilter(params: {
             class:
               "sidebar-session-sort-menu__item sidebar-session-owner-submenu sidebar-session-choice-submenu",
             closeOnSelect: false,
-            children: params.compact ? undefined : SidebarOwnerOptions(params),
+            children: params.compact ? undefined : buildSidebarOwnerOptions(params),
             [params.compact ? "content" : "trigger"]: (
               <>
                 <span class="session-menu__text">{t("sessionsView.specificOwner")}</span>

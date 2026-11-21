@@ -79,7 +79,12 @@ import {
   waitForGatewayHealthyListener,
   waitForGatewayHealthyRestart,
 } from "./restart-health.js";
-import { assertGatewayServiceActionAllowed, renderGatewayServiceStartHints } from "./shared.js";
+import {
+  renderGatewayServiceStopHints,
+  renderGatewayServiceUninstallHints,
+  assertGatewayServiceActionAllowed,
+  renderGatewayServiceStartHints,
+} from "./shared.js";
 import { repairLoadedGatewayServiceForStart } from "./start-repair.js";
 import type { DaemonLifecycleOptions } from "./types.js";
 
@@ -278,19 +283,6 @@ async function runExternalSupervisorRestart(opts: DaemonLifecycleOptions): Promi
     message: signaled.message,
   });
   return true;
-}
-
-function renderGatewayServiceStopHints(): string[] {
-  return [
-    `Run ${formatCliCommand("openclaw gateway status --deep")} to inspect the service, then retry.`,
-  ];
-}
-
-function renderGatewayServiceUninstallHints(): string[] {
-  return [
-    ...renderGatewayServiceStopHints(),
-    "To remove the service manually, see https://docs.openclaw.ai/install/uninstall#manual-service-removal-cli-not-installed",
-  ];
 }
 
 /** Uninstall the managed Gateway service after stopping it. */

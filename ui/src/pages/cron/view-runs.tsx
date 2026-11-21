@@ -1,5 +1,5 @@
 import { flattenMarkdownToPlainText } from "@openclaw/normalization-core/markdown-plain-text";
-import { createMemo, createSignal, createUniqueId, For, onSettled, Show } from "solid-js";
+import { untrack, createMemo, createSignal, createUniqueId, For, onSettled, Show } from "solid-js";
 import { cronRunEntryMatchesLink } from "../../../../src/cron/run-link.js";
 import type { CronRunLogEntry, CronDeliveryStatus, CronRunsStatusValue } from "../../api/types.ts";
 import { toSanitizedMarkdownHtml } from "../../components/markdown.ts";
@@ -540,7 +540,7 @@ function Run(props: {
   const expanded = () => userExpanded() ?? Boolean(highlighted());
   const toggle = () => setUserExpanded(!expanded());
   let row!: HTMLDivElement;
-  onSettled(() => props.onRunMount?.(row, () => props.entry));
+  onSettled(() => props.onRunMount?.(row, () => untrack(() => props.entry)));
   return (
     <div
       ref={(element) => {

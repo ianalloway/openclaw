@@ -398,15 +398,17 @@ export function InlineText(props: InlineTextProps) {
     }
     editing = true;
     publish();
-    queueMicrotask(() => {
-      if (!host.isConnected || !editing) {
-        return;
-      }
-      if (props.field === "labels") {
-        popover?.showPopover();
-      }
-      editorInput?.focus();
-    });
+    queueMicrotask(() =>
+      untrack(() => {
+        if (!host.isConnected || !editing) {
+          return;
+        }
+        if (props.field === "labels") {
+          popover?.showPopover();
+        }
+        editorInput?.focus();
+      }),
+    );
   };
   createEffect(
     () => props.card.id,

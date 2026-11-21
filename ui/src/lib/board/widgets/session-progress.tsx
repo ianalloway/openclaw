@@ -3,7 +3,7 @@ import { createMemo, createSignal, Errored, latest, Loading, onSettled, Show } f
 import { SessionProgressCard } from "../../../components/session-progress-card-solid.tsx";
 import { projectGateway } from "../../reactive/application.ts";
 import { useOptionalApplication } from "../../reactive/context.ts";
-import { projectProgressCard } from "../../reactive/domain-keyed.ts";
+import { createProgressCardProjection } from "../../reactive/domain-keyed.ts";
 import { t } from "../../reactive/i18n.ts";
 import { projectSource } from "../../reactive/projection.ts";
 import {
@@ -84,7 +84,7 @@ function SessionProgressWidgetContent(
         a.target.agentId === b.target.agentId,
     },
   );
-  const progress = projectProgressCard(progressScope);
+  const progress = createProgressCardProjection(progressScope);
   const rowScope = createMemo(
     () => ({
       sessionKey: identity().sessionKey,

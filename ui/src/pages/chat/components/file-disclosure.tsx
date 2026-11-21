@@ -93,7 +93,7 @@ export function FileDisclosure(props: {
       }
       const closed = !current.open && !animation;
       const from = closed || shell.hidden ? 0 : shell.getBoundingClientRect().height;
-      const opacity =
+      const initialOpacity =
         folder() && !closed && !shell.hidden ? Number(getComputedStyle(shell).opacity) : 0;
       return () => {
         applied = next;
@@ -102,7 +102,7 @@ export function FileDisclosure(props: {
         move(
           from,
           folder() ? undefined : next.open ? content.getBoundingClientRect().height : 0,
-          opacity,
+          initialOpacity,
         );
       };
     },

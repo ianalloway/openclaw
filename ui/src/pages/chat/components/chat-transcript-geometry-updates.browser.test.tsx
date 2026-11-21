@@ -2,21 +2,15 @@ import { expectDefined } from "@openclaw/normalization-core";
 import { Virtualizer } from "@tanstack/virtual-core";
 import { action, createEffect, createRoot, createSignal } from "solid-js";
 import { afterEach, expect, it, onTestFinished, vi } from "vitest";
-import type { ApplicationContext } from "../../../app/context.ts";
 import { flush } from "../../../test-helpers/solid-settle.ts";
-import { projectChatFields } from "../chat-field-projection.ts";
 import { createMountedPanes } from "../chat-pane-mounted.test-support.ts";
+import { createPaneTestHost } from "../chat-pane.test-support.ts";
 import "../../../styles.css";
 import "../../../styles/chat.ts";
-import { ChatPaneRuntime } from "../chat-pane-render.ts";
-import { createPaneTestHost } from "../chat-pane.test-support.ts";
 import { makeMessage } from "../chat-thread.test-support.ts";
-import { saveChatSessionScrollPosition } from "../scroll.ts";
 import type { ChatWidgetLayout } from "../session-message-cache.ts";
-import type { ChatThreadProps } from "./chat-thread-interactions.ts";
-import { ChatThread } from "./chat-thread-view.tsx";
-import type { ChatTranscript } from "./chat-transcript-controller.ts";
 import { TranscriptEndAnchor } from "./chat-transcript-end-anchor.ts";
+import { geometryMessages, GeometryPane } from "./chat-transcript-geometry.test-support.tsx";
 import { TranscriptLayoutOwner } from "./chat-transcript-layout-owner.ts";
 import {
   observeTranscriptOffset,
@@ -24,8 +18,7 @@ import {
 } from "./chat-transcript-offset-observer.ts";
 import { TranscriptPrependAnchor } from "./chat-transcript-prepend-anchor.ts";
 import { subscribeTranscriptScroll } from "./chat-transcript-scroll-events.ts";
-import { ChatSessionVirtualizerHost } from "./chat-transcript-virtualizer-host.ts";
-import { requireElement, threadProps } from "./chat-transcript.test-support.ts";
+import { requireElement } from "./chat-transcript.test-support.ts";
 
 // mock-isolation: Keep the pane shell small while exercising the production transcript owner.
 vi.mock("../chat-pane-layout-view.tsx", async (importOriginal) => {
@@ -33,96 +26,6 @@ vi.mock("../chat-pane-layout-view.tsx", async (importOriginal) => {
   const { createPaneLayoutFixture } = await import("../chat-pane-layout.test-support.tsx");
   return createPaneLayoutFixture(PaneLayout);
 });
-
-function geometryMessages(count: number) {
-  return Array.from({ length: count }, (_, index) => ({
-    role: index % 2 === 0 ? "user" : "assistant",
-    content: `Row ${index}`,
-    timestamp: index + 1,
-    __openclaw: { id: `geometry-row-${index}` },
-  }));
-}
-
-class GeometryPane extends ChatPaneRuntime {
-  session: ChatSessionVirtualizerHost | undefined;
-  fixtureStream: string | null = null;
-  fixtureHistory = false;
-  fixtureMessages: unknown[] = [];
-  private rowHeight = 120;
-  private fixtureWidgetLayout?: ChatWidgetLayout;
-
-  initialize(
-    context: ApplicationContext,
-    followEnd = false,
-    rowHeight = followEnd ? 360 : 120,
-    widgetLayout?: ChatWidgetLayout,
-    scrollTop = 0,
-    messages?: unknown[],
-  ) {
-    projectChatFields(this, ["fixtureStream", "fixtureHistory", "fixtureMessages"]);
-    this.context = context;
-    this.paneId = "geometry-render";
-    this.sessionKey = "agent:main:geometry-render";
-    this.rowHeight = rowHeight;
-    this.fixtureWidgetLayout = widgetLayout;
-    this.fixtureMessages = messages ?? geometryMessages(100);
-    saveChatSessionScrollPosition(this.paneId, this.sessionKey, {
-      scrollTop,
-      anchorToEnd: followEnd,
-    });
-  }
-
-  renderGeometry() {
-    this.transcript.renderSession(this.sessionKey, (session) => {
-      if (!(session instanceof ChatSessionVirtualizerHost)) {
-        throw new Error("Expected the session virtualizer owner");
-      }
-      this.session = session;
-    });
-    return {
-      layout: {
-        component: GeometryLayout,
-        props: {
-          transcript: this.transcript,
-          thread: threadProps(this.paneId, this.sessionKey, this.fixtureMessages, {
-            stream: this.fixtureStream,
-            assistantName: "Assistant",
-            historyPagination: this.fixtureHistory
-              ? { hasMore: true, loading: false, onShowEarlier: () => {} }
-              : undefined,
-            widgetLayout: this.fixtureWidgetLayout,
-          }),
-          rowHeight: this.rowHeight,
-        },
-      },
-      dialog: undefined,
-      capabilityDialogs: undefined,
-      providerReviewSource: undefined,
-    };
-  }
-}
-
-function GeometryLayout(props: {
-  transcript: ChatTranscript;
-  thread: ChatThreadProps;
-  rowHeight: number;
-}) {
-  return (
-    <div
-      class="geometry-transcript-fixture"
-      style={{ "--geometry-row-height": `${props.rowHeight}px` }}
-    >
-      <style>{`
-        .geometry-transcript-fixture .chat-thread-viewport {
-          height: 400px; flex: none; padding: 20px 0;
-        }
-        .geometry-transcript-fixture .chat-thread { overflow-anchor: none; }
-        .geometry-transcript-fixture .chat-virtual-row { height: var(--geometry-row-height); }
-      `}</style>
-      <ChatThread props={props.thread} transcript={props.transcript} />
-    </div>
-  );
-}
 
 let pane: (GeometryPane & HTMLElement) | undefined;
 afterEach(() => {

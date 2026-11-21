@@ -1,6 +1,6 @@
 /* @vitest-environment jsdom */
 
-import { createMemo, createSignal } from "solid-js";
+import { untrack, createMemo, createSignal } from "solid-js";
 import { afterEach, assert, beforeEach, describe, expect, it, vi } from "vitest";
 import { mountSolid } from "../../../test-helpers/mount-solid.ts";
 import { flush, waitForSolid } from "../../../test-helpers/solid-settle.ts";
@@ -282,7 +282,7 @@ describe("conversation position rail", () => {
           viewport: { clientHeight, scrollHeight, scrollTop: 0 },
         }),
       );
-      publish();
+      untrack(publish);
       flushFrame();
     };
     resize(600, 601);

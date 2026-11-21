@@ -14,7 +14,7 @@ type AppearanceGlyphProps = Parameters<Components["mountAppearanceGlyph"]>[1];
 type SessionSummaryProps = Parameters<Components["mountSessionSummary"]>[1];
 type Styled = { class?: JSX.HTMLAttributes<HTMLElement>["class"]; className?: string };
 
-function hostMount<Props extends object>(
+function createHostComponentRef<Props extends object>(
   read: () => Props,
   mount: (container: HTMLElement, props: Props) => ControlUiComponentHandle<Props>,
 ) {
@@ -42,7 +42,7 @@ export function Dialog(
   const content = document.createElement("div");
   content.style.display = "contents";
   // Plugin rendering owns the content; the SDK owns the containing dialog and focus policy.
-  const mount = hostMount(
+  const mount = createHostComponentRef(
     () => ({
       label: props.label,
       description: props.description,
@@ -63,7 +63,7 @@ export function Dialog(
 }
 
 export function AgentPicker(props: PickerProps & Styled) {
-  const mount = hostMount(
+  const mount = createHostComponentRef(
     () => ({ ...props }),
     (container, value) => workboardHost().components.mountAgentPicker(container, value),
   );
@@ -74,14 +74,14 @@ export function AgentAvatar(props: AvatarProps) {
   const readAvatar = createMemo(() => ({ agentId: props.agentId, label: props.label }), {
     equals: (previous, next) => previous.agentId === next.agentId && previous.label === next.label,
   });
-  const mount = hostMount(readAvatar, (container, value) =>
+  const mount = createHostComponentRef(readAvatar, (container, value) =>
     workboardHost().components.mountAgentAvatar(container, value),
   );
   return <span aria-hidden="true" ref={mount} />;
 }
 
 export function SelectPicker(props: SelectPickerProps & Styled) {
-  const mount = hostMount(
+  const mount = createHostComponentRef(
     () => ({ ...props }),
     (container, value) => workboardHost().components.mountSelectPicker(container, value),
   );
@@ -89,7 +89,7 @@ export function SelectPicker(props: SelectPickerProps & Styled) {
 }
 
 export function AppearancePicker(props: AppearancePickerProps & Styled) {
-  const mount = hostMount(
+  const mount = createHostComponentRef(
     () => ({ ...props }),
     (container, value) => workboardHost().components.mountAppearancePicker(container, value),
   );
@@ -97,7 +97,7 @@ export function AppearancePicker(props: AppearancePickerProps & Styled) {
 }
 
 export function AppearanceGlyph(props: AppearanceGlyphProps & Styled) {
-  const mount = hostMount(
+  const mount = createHostComponentRef(
     () => ({ ...props }),
     (container, value) => workboardHost().components.mountAppearanceGlyph(container, value),
   );
@@ -115,7 +115,7 @@ export function AppearanceGlyph(props: AppearanceGlyphProps & Styled) {
 }
 
 export function SessionSummary(props: SessionSummaryProps) {
-  const mount = hostMount(
+  const mount = createHostComponentRef(
     () => ({ ...props }),
     (container, value) => workboardHost().components.mountSessionSummary(container, value),
   );

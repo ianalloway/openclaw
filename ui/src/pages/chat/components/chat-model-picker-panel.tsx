@@ -30,7 +30,7 @@ import {
   ChatModelPickerOption,
   ChatModelPickerTargets,
   ModelList,
-  modelOptionSearchRow,
+  modelProviderSearchRows,
 } from "./chat-model-picker-options.tsx";
 import {
   createChatModelSearchView,
@@ -176,26 +176,7 @@ export function ChatModelPickerPanel(panel: ChatModelPickerPanelProps) {
         ...providerGroups
           .filter(([provider]) => provider !== FAVORITES_GROUP || !search?.query().trim())
           .flatMap(([provider, group]) =>
-            group.lead
-              .map((entry) =>
-                Object.assign(modelOptionSearchRow({ ...modelSearchProps, entry }, defaultLabel), {
-                  key: modelRowKey(entry, provider),
-                  provider,
-                  list: provider,
-                }),
-              )
-              .concat(
-                group.more.map((entry) =>
-                  Object.assign(
-                    modelOptionSearchRow({ ...modelSearchProps, entry }, defaultLabel),
-                    {
-                      provider,
-                      more: true,
-                      list: `${provider}:more`,
-                    },
-                  ),
-                ),
-              ),
+            modelProviderSearchRows(provider, group, modelSearchProps, defaultLabel),
           ),
         ...targetGroups.flatMap((group) =>
           group.options.map((entry) => ({

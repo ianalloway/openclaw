@@ -1,6 +1,6 @@
 import type { BoardGetParams } from "@openclaw/gateway-protocol";
 import { asNullableRecord } from "@openclaw/normalization-core/record-coerce";
-import { createMemo, createSignal, Errored, Loading, onSettled, Show } from "solid-js";
+import { untrack, createMemo, createSignal, Errored, Loading, onSettled, Show } from "solid-js";
 import { resolveControlUiAuthToken } from "../../../app/control-ui-auth.ts";
 import {
   isBrowserDashboardAvailable,
@@ -129,20 +129,22 @@ function BrowserDashboardWidgetContent(
           }
         }
         onSettled(() => {
-          const unsubscribe = context?.gateway.subscribeEvents((event) => {
-            const payload = asNullableRecord(event.payload);
-            if (
-              event.event !== "plugin.browser.dashboard_changed" ||
-              payload?.instanceId !== props.widget?.instanceId ||
-              payload?.name !== props.widget?.name
-            ) {
-              return;
-            }
-            refreshNeeded = true;
-            if (props.active) {
-              void request("inspect");
-            }
-          });
+          const unsubscribe = context?.gateway.subscribeEvents((event) =>
+            untrack(() => {
+              const payload = asNullableRecord(event.payload);
+              if (
+                event.event !== "plugin.browser.dashboard_changed" ||
+                payload?.instanceId !== props.widget?.instanceId ||
+                payload?.name !== props.widget?.name
+              ) {
+                return;
+              }
+              refreshNeeded = true;
+              if (props.active) {
+                void request("inspect");
+              }
+            }),
+          );
           activate();
           return () => {
             connected = false;

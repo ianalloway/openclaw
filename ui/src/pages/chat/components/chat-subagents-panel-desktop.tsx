@@ -1,5 +1,5 @@
 import type { JSX } from "@solidjs/web";
-import { For, Show, createMemo, createStore, createUniqueId, onSettled } from "solid-js";
+import { untrack, For, Show, createMemo, createStore, createUniqueId, onSettled } from "solid-js";
 import { Icon } from "../../../components/solid/icon.tsx";
 import { PanelEmptyState } from "../../../components/solid/panel-empty-state.tsx";
 import { PanelLoadingSkeleton } from "../../../components/solid/panel-loading-skeleton.tsx";
@@ -74,7 +74,7 @@ function DesktopRow(props: {
   renderElapsed: ChatSubagentsPanelDesktopProps["renderElapsed"];
   registerOpen: (key: string, button: HTMLButtonElement) => () => void;
 }) {
-  const stop = props.createStop(() => props.row);
+  const stop = untrack(() => props.createStop(() => props.row));
   const name = () => resolveSessionDisplayName(props.row.session.key, props.row.session);
   const group = () => groupFor(props.row);
   const ended = () => endedWithoutFinishing(props.row.session);

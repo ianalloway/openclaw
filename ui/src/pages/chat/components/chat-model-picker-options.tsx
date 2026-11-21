@@ -1,19 +1,22 @@
 import type { JSX } from "@solidjs/web";
 import { createMemo, createSignal, Errored, For, Loading, Show, useContext } from "solid-js";
-import { providerDisplayLabel as defaultProviderLabel } from "../../../components/provider-icon-data.ts";
-import type { ProviderPresentation } from "../../../components/provider-icon-data.ts";
+import {
+  providerDisplayLabel as defaultProviderLabel,
+  type ProviderPresentation,
+} from "../../../components/provider-icon-data.ts";
 import { Icon } from "../../../components/solid/icon.tsx";
 import { ProviderBrandIcon } from "../../../components/solid/provider-icon.tsx";
 import { Tooltip } from "../../../components/solid/tooltip.tsx";
 import { registerModelFavoritesEnglish } from "../../../i18n/locales/en-model-favorites.ts";
 import { formatDurationHuman } from "../../../lib/format-duration.ts";
-import "../../../components/tooltip.ts";
 import { formatModelRuntimeLabel } from "../../../lib/model-runtime-label.ts";
+import "../../../components/tooltip.ts";
 import { registerEnglishCatalog, t } from "../../../lib/reactive/i18n.ts";
 import { readVisibleTime } from "../../../lib/reactive/visible-clock.ts";
 import { ChatContextWindowControl } from "./chat-context-window-control.tsx";
 import { ChatModelCatalogState } from "./chat-model-catalog-state.tsx";
 import {
+  modelRowKey,
   formatModelContextMeta,
   formatModelLabel,
   isModelPickerOptionSelected,
@@ -552,4 +555,28 @@ export function ChatModelPickerTargets(panel: {
       </Errored>
     </Show>
   );
+}
+
+export function modelProviderSearchRows(
+  provider: string,
+  group: { lead: ModelPresentationProps["entry"][]; more: ModelPresentationProps["entry"][] },
+  options: Omit<ModelPresentationProps, "entry">,
+  defaultLabel: string,
+): ChatModelSearchRow[] {
+  const row = (entry: ModelPresentationProps["entry"]) =>
+    modelOptionSearchRow({ ...options, entry }, defaultLabel);
+  return [
+    ...group.lead.map((entry) => ({
+      ...row(entry),
+      key: modelRowKey(entry, provider),
+      provider,
+      list: provider,
+    })),
+    ...group.more.map((entry) => ({
+      ...row(entry),
+      provider,
+      more: true,
+      list: provider + ":more",
+    })),
+  ];
 }

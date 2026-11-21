@@ -219,8 +219,11 @@ export function ApiKeyInput(props: {
   );
 }
 
-function keyEditorOpen(props: ProviderRowProps): boolean {
-  return props.keyEditorProvider === props.card.id;
+function keyEditorOpen({
+  keyEditorProvider,
+  card,
+}: Pick<ProviderRowProps, "keyEditorProvider" | "card">): boolean {
+  return keyEditorProvider === card.id;
 }
 
 /** Opens the key form, which then stands in for this button until it closes. */
@@ -315,8 +318,12 @@ function KeyEditor(props: ProviderRowProps & { onCancel?: () => void }) {
 }
 
 /** Defaults for all agents served by this provider; removal keeps them selected. */
-function defaultModelsUsing(props: ProviderRowProps): string | undefined {
-  const { primary, fallbacks, utilityModel } = props.defaultModels;
+function defaultModelsUsing({
+  defaultModels,
+  configuredModels,
+  card,
+}: Pick<ProviderRowProps, "defaultModels" | "configuredModels" | "card">): string | undefined {
+  const { primary, fallbacks, utilityModel } = defaultModels;
   const names = [
     primary,
     ...fallbacks,
@@ -325,9 +332,9 @@ function defaultModelsUsing(props: ProviderRowProps): string | undefined {
   ].flatMap((ref) => {
     const model = ref ? splitTrailingAuthProfile(ref).model : "";
     // Aliases resolve through their catalog entry; other refs name the provider first.
-    const entry = props.configuredModels.find((candidate) => modelCatalogRef(candidate) === model);
+    const entry = configuredModels.find((candidate) => modelCatalogRef(candidate) === model);
     const provider = entry?.provider ?? (model.includes("/") ? model.split("/", 1)[0] : "");
-    return provider && canonicalModelAuthProviderId(provider) === props.card.id
+    return provider && canonicalModelAuthProviderId(provider) === card.id
       ? [entry?.name ?? model]
       : [];
   });

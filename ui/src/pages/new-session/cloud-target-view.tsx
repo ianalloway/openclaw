@@ -10,7 +10,7 @@ import { Icon, type IconName } from "../../components/solid/icon.tsx";
 import "../../components/tooltip.ts";
 import { MenuHeading } from "../../components/solid/menu-heading.tsx";
 import { t } from "../../lib/reactive/i18n.ts";
-import { nativeListener } from "../../lib/solid-native-listener.ts";
+import { createNativeListenerRef } from "../../lib/solid-native-listener.ts";
 import { machineShapeText, type CloudChoiceMenuItemsOptions } from "./cloud-target.ts";
 import {
   cloudMachinesForOs,
@@ -125,7 +125,7 @@ export function SessionMenuItem(props: { item: NativeSessionMenuItem; submitting
       .join(", ");
   const accessibleDescription = () =>
     [accessibilityHints(), unavailableReason()].filter(Boolean).join(", ");
-  const select = nativeListener("click", (event) => {
+  const select = createNativeListenerRef("click", (event) => {
     if (props.item.disabled) {
       event.preventDefault();
       event.stopPropagation();

@@ -8,7 +8,6 @@ import { BoardWidgetSandboxHost } from "../../lib/board/widget-sandbox-host.ts";
 import { remainingBoardWidgetTicketTtlMs } from "../../lib/board/widget-ticket-lifetime.ts";
 import { formatUiError } from "../../lib/format-error.ts";
 import { isGatewayAvailable } from "../../lib/gateway-availability.ts";
-import { isLoopbackHostname } from "../../lib/gateway-locality.ts";
 import { registerEnglishCatalog, t } from "../../lib/reactive/i18n.ts";
 import { subscribeDocumentVisibility } from "../../lib/reactive/platform.ts";
 import { observeWindowMessage } from "../../lib/reactive/window-message.ts";
@@ -20,6 +19,10 @@ import { McpAppConfirmation } from "../mcp-app-confirm-solid.tsx";
 import { createMcpAppConfirm } from "../mcp-app-confirm.ts";
 import { resolveGatewayHttpOrigin, resolveSandboxHostUrl } from "../sandbox-host.ts";
 import { PanelLoadingSkeleton } from "../solid/panel-loading-skeleton.tsx";
+import {
+  derivedRemoteSandboxOrigin,
+  resolveBoardFrameFailureMessage,
+} from "./board-widget-frame-failure.ts";
 import { BoardWidgetTicketRefresh, type FrameRefresh } from "./board-widget-ticket-refresh.ts";
 
 registerEnglishCatalog(registerBoardEnglish);
@@ -35,32 +38,6 @@ const MAX_FRAME_REFRESH_ATTEMPTS = 3;
 
 function documentHidden(): boolean {
   return typeof document !== "undefined" && document.visibilityState === "hidden";
-}
-
-// Without mcp.apps.sandboxOrigin the sandbox URL is the gateway origin with the
-// sandbox port substituted. On a non-loopback host that derived port often sits
-// behind a reverse proxy or tunnel that does not route it, and the browser
-// cannot distinguish that from a real authorization failure or an unreachable
-// sandbox — so terminal messages keep their fact but add the deployment hint
-// operators otherwise never find.
-function derivedRemoteSandboxOrigin(
-  widget: Pick<BoardWidget, "sandboxOrigin">,
-  resolvedSandboxOrigin: string,
-): boolean {
-  return (
-    !widget.sandboxOrigin &&
-    Boolean(resolvedSandboxOrigin) &&
-    !isLoopbackHostname(new URL(resolvedSandboxOrigin).hostname)
-  );
-}
-
-function resolveBoardFrameFailureMessage(
-  widget: Pick<BoardWidget, "sandboxOrigin">,
-  resolvedSandboxOrigin: string,
-): string {
-  return derivedRemoteSandboxOrigin(widget, resolvedSandboxOrigin)
-    ? t("board.widget.sandboxOriginRequired")
-    : t("board.widget.frameAuthorizationFailed");
 }
 
 export type BoardWidgetFrameOwner = ReturnType<typeof createBoardWidgetFrame>;

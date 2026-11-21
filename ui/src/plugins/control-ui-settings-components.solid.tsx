@@ -4,7 +4,7 @@ import type { ControlUiComponentHandle } from "../../../src/plugin-sdk/control-u
 import type { ControlUiSettingsComponents } from "../../../src/plugin-sdk/control-ui-settings.js";
 import { LobsterSvg } from "../components/lobster-pet-artwork.tsx";
 import { lobsterPetSeed } from "../components/lobster-pet-contract.ts";
-import { createLobsterPetLook, lobsterLookStyle } from "../components/lobster-pet-identity.ts";
+import { createLobsterPetLook, lobsterLookProperties } from "../components/lobster-pet-identity.ts";
 import {
   SettingsNavRow,
   SettingsRow,
@@ -20,7 +20,7 @@ export function createControlUiSettingsComponents(
   function mount<P extends object>(
     container: HTMLElement,
     initial: P,
-    view: (props: () => P) => JSX.Element,
+    View: (props: P) => JSX.Element,
     row = false,
   ): ControlUiComponentHandle<P> {
     signal.throwIfAborted();
@@ -29,7 +29,7 @@ export function createControlUiSettingsComponents(
     }
     // The bridge applies imperative plugin updates to the host-owned visual root.
     const [state, setState] = createSignal({ value: initial }, { ownedWrite: true });
-    const stop = render(() => view(() => state().value), container);
+    const stop = render(() => <View {...state().value} />, container);
     let active = true;
     const dispose = () => {
       if (!active) {
@@ -54,7 +54,7 @@ export function createControlUiSettingsComponents(
   return {
     mountSection: (container, initial) =>
       mount(container, initial, (props) => (
-        <SettingsSection title={props().title}>{props().content}</SettingsSection>
+        <SettingsSection title={props.title}>{props.content}</SettingsSection>
       )),
     mountRow: (container, initial) =>
       mount(
@@ -62,31 +62,29 @@ export function createControlUiSettingsComponents(
         initial,
         (props) => (
           <SettingsRow
-            title={props().title}
-            description={props().description}
-            control={props().control}
+            title={props.title}
+            description={props.description}
+            control={props.control}
           />
         ),
         true,
       ),
     mountStatus: (container, initial) =>
       mount(container, initial, (props) => (
-        <SettingsStatus kind={props().kind} label={props().label} />
+        <SettingsStatus kind={props.kind} label={props.label} />
       )),
     mountValue: (container, initial) =>
-      mount(container, initial, (props) => (
-        <SettingsValue value={props().value} mono={props().mono} />
-      )),
+      mount(container, initial, (props) => <SettingsValue value={props.value} mono={props.mono} />),
     mountNavigation: (container, initial) =>
       mount(
         container,
         initial,
         (props) => (
           <SettingsNavRow
-            title={props().title}
+            title={props.title}
             onClick={() => {
               signal.throwIfAborted();
-              props().onClick();
+              props.onClick();
             }}
           />
         ),
@@ -94,15 +92,15 @@ export function createControlUiSettingsComponents(
       ),
     mountLobster: (container, initial) =>
       mount(container, initial, (props) => {
-        const look = createMemo(() => createLobsterPetLook(lobsterPetSeed(props().seed)));
+        const look = createMemo(() => createLobsterPetLook(lobsterPetSeed(props.seed)));
         return (
-          <div style={`${lobsterLookStyle(look())};display:contents`}>
+          <div style={{ ...lobsterLookProperties(look()), display: "contents" }}>
             <LobsterSvg
               look={look()}
-              sleeping={props().sleeping}
-              reading={props().reading}
-              grumpy={props().grumpy}
-              standalone={props().standalone}
+              sleeping={props.sleeping}
+              reading={props.reading}
+              grumpy={props.grumpy}
+              standalone={props.standalone}
             />
           </div>
         );

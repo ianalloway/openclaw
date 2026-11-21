@@ -1,4 +1,13 @@
-import { action, createMemo, createOptimistic, createSignal, For, onSettled, Show } from "solid-js";
+import {
+  untrack,
+  action,
+  createMemo,
+  createOptimistic,
+  createSignal,
+  For,
+  onSettled,
+  Show,
+} from "solid-js";
 import type { SessionsListResult } from "../../api/types.ts";
 import { readOfflineStorageScope } from "../../app/boot-record.ts";
 import { showConfirmDialog } from "../../components/confirm-dialog.ts";
@@ -93,15 +102,17 @@ function createChatOutboxRecovery(props: RecoveryProps, element: () => HTMLEleme
     let messages = host?.chatMessages;
     const stopReceipts =
       host &&
-      chatRunPresentation(host).subscribe(() => {
-        if (messages === host.chatMessages) {
-          return;
-        }
-        messages = host.chatMessages;
-        if (entries().some((entry) => entry.session.queue?.some((item) => item.sendRunId))) {
-          void refresh();
-        }
-      });
+      chatRunPresentation(host).subscribe(() =>
+        untrack(() => {
+          if (messages === host.chatMessages) {
+            return;
+          }
+          messages = host.chatMessages;
+          if (entries().some((entry) => entry.session.queue?.some((item) => item.sendRunId))) {
+            void refresh();
+          }
+        }),
+      );
     void refresh();
     return () => {
       active = false;

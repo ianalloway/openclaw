@@ -41,7 +41,7 @@ export function FileDraftRecoveryDialog(props: {
     if (!current(entry)) {
       return;
     }
-    const ok = await copyToClipboard(entry.content, () => current(entry));
+    const ok = await copyToClipboard(entry.content, () => untrack(() => current(entry)));
     if (current(entry)) {
       setCopied(ok ? entry : undefined);
       setError(ok ? "" : t("chat.detailPanel.draftRecovery.copyFailed"));

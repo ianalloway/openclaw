@@ -1,5 +1,14 @@
 import { dynamic } from "@solidjs/web";
-import { Errored, For, createDeferred, createMemo, isPending, latest, Loading } from "solid-js";
+import {
+  untrack,
+  Errored,
+  For,
+  createDeferred,
+  createMemo,
+  isPending,
+  latest,
+  Loading,
+} from "solid-js";
 import type { GatewaySessionRow, SessionsListResult } from "../../api/types.ts";
 import type { ApplicationContext } from "../../app/context.ts";
 import { SettingsStatus } from "../../components/solid/settings-ui.tsx";
@@ -55,7 +64,9 @@ function CurrentSession(props: { owner: CurrentWorkProps; row: GatewaySessionRow
       onClick={
         target()
           ? (event: MouseEvent) =>
-              handleNavigationClick(event, () => props.owner.navigate(face(), target()!.options))
+              handleNavigationClick(event, () =>
+                untrack(() => props.owner.navigate(face(), target()!.options)),
+              )
           : undefined
       }
     >

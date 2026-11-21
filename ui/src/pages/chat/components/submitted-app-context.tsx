@@ -18,7 +18,7 @@ export function SubmittedAppContext(props: { message: unknown }) {
     <Show when={items()}>
       <section
         class="mcp-app-context"
-        style="margin-bottom: 8px; border-bottom: 0; padding: 0;"
+        style={{ "margin-bottom": "8px", "border-bottom": "0", padding: "0" }}
         aria-label={t("mcpApp.contextTitle")}
       >
         <div class="mcp-app-context__items">

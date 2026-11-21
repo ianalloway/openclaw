@@ -65,7 +65,7 @@ function SubagentActivityRow(props: SubagentActivityProps & { row: DetailsSubage
         <span
           class="chat-details__agent-avatar"
           data-status={props.row.status}
-          style={`--chat-details-avatar-hue: ${fnv1aUtf16(props.row.key) % 360}`}
+          style={{ "--chat-details-avatar-hue": String(fnv1aUtf16(props.row.key) % 360) }}
           aria-hidden="true"
         >
           <Icon name="bot" />

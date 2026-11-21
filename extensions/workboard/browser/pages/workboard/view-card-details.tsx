@@ -1,5 +1,5 @@
 /** @jsxImportSource @solidjs/web */
-import { For, Show, createEffect, createMemo, merge } from "solid-js";
+import { untrack, For, Show, createEffect, createMemo, merge } from "solid-js";
 import { AgentAvatar, SessionSummary, Dialog } from "../../components/host-components.tsx";
 import { icons } from "../../components/icons.tsx";
 import { WorkboardErrorToast } from "../../components/toast.tsx";
@@ -140,10 +140,12 @@ function CardDetailsContent(props: WorkboardProps & { card: WorkboardCard }) {
     return true;
   };
   const dismissDetails = () =>
-    requestTransition(() => {
-      closeCardDetails(state());
-      props.onRequestUpdate?.();
-    });
+    requestTransition(() =>
+      untrack(() => {
+        closeCardDetails(state());
+        props.onRequestUpdate?.();
+      }),
+    );
   const navigateAutomation = (event: MouseEvent) => {
     if (
       event.defaultPrevented ||
@@ -173,7 +175,7 @@ function CardDetailsContent(props: WorkboardProps & { card: WorkboardCard }) {
   };
   const actionProps = merge(props, {
     onOpenSession: (session: Parameters<WorkboardProps["onOpenSession"]>[0]) => {
-      requestTransition(() => props.onOpenSession(session));
+      requestTransition(() => untrack(() => props.onOpenSession(session)));
     },
   });
   const action = createMemo(() => getCardActionState(props, card()));

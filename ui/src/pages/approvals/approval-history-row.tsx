@@ -1,4 +1,4 @@
-import { createSignal } from "solid-js";
+import { createSignal, Show } from "solid-js";
 import type {
   ApprovalAllowDecision,
   ApprovalKind,
@@ -71,12 +71,14 @@ function resolverLabel(item: TerminalApprovalSnapshot): string | undefined {
 }
 
 function DetailRow(props: { label: string; value: string | undefined; mono?: boolean }) {
-  return props.value ? (
-    <div>
-      <dt>{t(props.label)}</dt>
-      <dd class={{ mono: props.mono }}>{props.value}</dd>
-    </div>
-  ) : null;
+  return (
+    <Show when={props.value}>
+      <div>
+        <dt>{t(props.label)}</dt>
+        <dd class={{ mono: props.mono }}>{props.value}</dd>
+      </div>
+    </Show>
+  );
 }
 
 export function HistoryRow(props: {

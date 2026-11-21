@@ -1,4 +1,4 @@
-import { onSettled } from "solid-js";
+import { untrack, onSettled } from "solid-js";
 import { cancelLayout, scheduleLayout } from "../../../lib/layout-frame.ts";
 import { t } from "../../../lib/reactive/i18n.ts";
 import {
@@ -18,12 +18,14 @@ export function SidebarRegionDivider(
 ) {
   const resizeCommit = {};
   const finishResize = () => {
-    scheduleLayout(resizeCommit, () => {
-      const shell = props.elements?.shell;
-      // Settle the direct resize before re-enabling frame transitions.
-      shell?.getBoundingClientRect();
-      return () => shell?.removeAttribute("data-sidebar-resizing");
-    });
+    scheduleLayout(resizeCommit, () =>
+      untrack(() => {
+        const shell = props.elements?.shell;
+        // Settle the direct resize before re-enabling frame transitions.
+        shell?.getBoundingClientRect();
+        return () => shell?.removeAttribute("data-sidebar-resizing");
+      }),
+    );
   };
   const beginResize = () => {
     const shell = props.elements?.shell;

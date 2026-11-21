@@ -1,12 +1,13 @@
 import { setTimeout as delay } from "node:timers/promises";
 import { collectErrorGraphCandidates } from "@openclaw/normalization-core/error-coercion";
-import { asNullableRecord } from "@openclaw/normalization-core/record-coerce";
+import { asNullableRecord, isRecord } from "@openclaw/normalization-core/record-coerce";
 import {
   buildAgentRunTerminalOutcomeFromLifecycleEvent,
   classifyAgentRunTerminalOutcome,
   mergeAgentRunTerminalOutcome,
   type AgentRunTerminalOutcome,
 } from "../../agents/agent-run-terminal-outcome.js";
+import { FAILOVER_REASONS } from "../../agents/failover/signal.js";
 import {
   AGENT_RUN_SUPERSEDED_STOP_REASON,
   resolveAgentRunErrorLifecycleFields,
@@ -18,6 +19,7 @@ import { claimSystemEventTurn } from "../../infra/system-events.js";
 import type { SubsystemLogger } from "../../logging/subsystem.js";
 import type { ReplyOperation } from "../../sessions/session-controller.contracts.js";
 import type {
+  SessionEventExecution,
   SessionEventOptions,
   SessionEventOutcome,
   SessionEventReceipt,
@@ -227,4 +229,29 @@ export function readmitSessionEventOccurrence(params: {
     });
     return { failure };
   }
+}
+
+export function captureSessionEventSettlement(
+  previous: AgentRunTerminalOutcome | undefined,
+  outcome: Parameters<SessionEventExecution["onTerminal"]>[1],
+  evidence: Parameters<SessionEventExecution["onTerminal"]>[2],
+  signal: AbortSignal,
+) {
+  return mergeAgentRunTerminalOutcome(
+    previous,
+    buildAgentRunTerminalOutcomeFromLifecycleEvent({
+      phase: outcome === "completed" ? "end" : "error",
+      data: evidence?.meta,
+      abortSignal: signal,
+    }),
+  );
+}
+
+export function sessionEventFailoverReason(
+  data: Parameters<NonNullable<SessionEventExecution["onTerminalEvent"]>>[0]["data"],
+) {
+  const observation = data.errorObservation;
+  return data.phase === "error" && isRecord(observation)
+    ? FAILOVER_REASONS.find((reason) => reason === observation.failoverReason)
+    : undefined;
 }
