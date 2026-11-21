@@ -237,6 +237,30 @@ jobs:
             echo "kova_ref_trusted_for_live=false" >> "$GITHUB_OUTPUT"
           fi
 
+      - name: Verify default-branch benchmark revisions
+        if: github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
+        env:
+          CANDIDATE_SHA: ${{ steps.resolve.outputs.tested_sha }}
+          KOVA_REF: ${{ steps.resolve.outputs.kova_ref }}
+          WORKFLOW_SHA: ${{ github.workflow_sha }}
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: &verify_default_branch_benchmark |
+          set -euo pipefail
+          # A runner can write its branch cache even when dependency caching is off.
+          if [[ -n "${KOVA_REF:-}" && "$KOVA_REF" != "$KOVA_CANONICAL_CONFIG_REF" && "$KOVA_REF" != "$KOVA_LEGACY_LIST_CONFIG_REF" ]]; then
+            echo "::error::Run custom Kova revisions from a separate benchmark branch."
+            exit 1
+          fi
+          [[ "$CANDIDATE_SHA" =~ ^[0-9a-f]{40}$ && "$WORKFLOW_SHA" =~ ^[0-9a-f]{40}$ ]]
+          if [[ "$CANDIDATE_SHA" != "$WORKFLOW_SHA" ]]; then
+            merge_base="$(gh api "repos/${GITHUB_REPOSITORY}/compare/${CANDIDATE_SHA}...${WORKFLOW_SHA}" --jq .merge_base_commit.sha)"
+            if [[ "$merge_base" != "$CANDIDATE_SHA" ]]; then
+              echo "::error::Run revisions outside default-branch history from a separate benchmark branch."
+              exit 1
+            fi
+          fi
+
       - name: Classify performance candidate trust
         id: candidate_trust
         env:
@@ -1760,6 +1784,15 @@ jobs:
             fail "target_ref must be an exact lowercase 40-character SHA"
           [[ "$TARGET_REF" == "$WORKFLOW_SHA" ]] ||
             fail "target_ref must equal github.workflow_sha for vitest-pair mode"
+
+      - name: Verify default-branch benchmark baseline
+        if: github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
+        env:
+          CANDIDATE_SHA: ${{ inputs.baseline_ref }}
+          WORKFLOW_SHA: ${{ github.workflow_sha }}
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: *verify_default_branch_benchmark
 
       - name: Checkout Vitest pair helper
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1

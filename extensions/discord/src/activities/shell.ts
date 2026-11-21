@@ -82,6 +82,20 @@ async function run() {
     return;
   }
   const clientId = match[1];
+  // Only Discord's RPC window may deliver SDK messages. Sandboxed widgets also have an opaque origin.
+  const rpcWindow = window.parent.opener ?? window.parent;
+  window.addEventListener("message", (event) => {
+    if (event.source !== rpcWindow) {
+      event.stopImmediatePropagation();
+      return;
+    }
+    // The SDK parses message schemas before matching requests or subscriptions.
+    // This shell neither requests nor subscribes to Discord relationships.
+    const [opcode, frame] = Array.isArray(event.data) ? event.data : [];
+    if (opcode === 1 && (frame?.cmd === "GET_RELATIONSHIPS" || frame?.evt === "RELATIONSHIP_UPDATE")) {
+      event.stopImmediatePropagation();
+    }
+  }, true);
   const sdk = new DiscordSDK(clientId);
   await sdk.ready();
   const { code } = await sdk.commands.authorize({
