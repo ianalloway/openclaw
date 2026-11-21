@@ -58,7 +58,9 @@ it.each(["late-value", "late-ref"] as const)(
         return <Show when={shown()}>{(_shown) => <input ref={bind} />}</Show>;
       }
       return (
-        <Show when={entry()}>{(current) => <input ref={createLiveValueRef(() => current().value)} />}</Show>
+        <Show when={entry()}>
+          {(current) => <input ref={createLiveValueRef(() => current().value)} />}
+        </Show>
       );
     });
     expect(view.container.querySelector("input")).toBeNull();

@@ -507,7 +507,7 @@ function SelectionDialogContent(props: { workboard: WorkboardProps; draft: Workb
   return (
     <Dialog
       label={title()}
-      style={{ "--openclaw-modal-width": "460px", "--openclaw-modal-backdrop-filter": "none" }}
+      style="--openclaw-modal-width: 460px; --openclaw-modal-backdrop-filter: none;"
       onCancel={close}
     >
       <form

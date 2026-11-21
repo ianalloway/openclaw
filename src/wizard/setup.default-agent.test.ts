@@ -67,6 +67,7 @@ vi.mock("./setup.workspace.js", () => ({
 
 vi.mock("./setup.secret-input.js", () => ({
   resolveSetupSecretInputString: vi.fn(async () => undefined),
+  resolveSetupProbeSecret: vi.fn(async ({ fallback }: { fallback?: string }) => fallback),
 }));
 
 // mock-isolation: isolate wizard routing from gateway configuration prompts.

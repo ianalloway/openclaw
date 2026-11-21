@@ -1,4 +1,6 @@
+import type { KeyboardShortcutCombo } from "../../../lib/keyboard-shortcut-contract.ts";
 import { t } from "../../../lib/reactive/i18n.ts";
+import type { ChatPageHost } from "../chat-state-host.ts";
 import {
   ensureSidebarConversation,
   promoteSidebarPanel,
@@ -8,9 +10,32 @@ import {
   sidebarDock,
   sidebarMainPanel,
   toggleSidebarPanelExpanded,
+  type SidebarLayout,
+  type SidebarSlotId,
 } from "../sidebar-layout.ts";
-import type { ChatPaneLayoutMenuProps } from "./chat-header-panel-actions.tsx";
+import type { HeaderMenuQuickAction } from "./chat-header-session-menu.ts";
 import type { ChatQuickAction } from "./chat-quick-action.tsx";
+import type { SidebarPanelDefinition } from "./chat-sidebar-region-types.ts";
+
+export type HeaderPanelAction = HeaderMenuQuickAction & { shortcut?: KeyboardShortcutCombo };
+
+export type ChatPaneLayoutMenuProps = {
+  paneId: string;
+  narrow: boolean;
+  mobile?: boolean;
+  actionsDisabled?: boolean;
+  panelMenuActions?: HeaderPanelAction[];
+  layoutMenuActions?: HeaderMenuQuickAction[];
+  sidebarLayout?: SidebarLayout;
+  panelDefinitions?: SidebarPanelDefinition[];
+  onLayoutChange?: ChatPageHost["updateSidebarLayout"];
+  onToggleSidePanel?: () => void;
+  onCloseSidePanel?: (slot: SidebarSlotId) => void;
+  onOpenSplitView?: () => void;
+  onSplitDown?: (paneId: string) => void;
+  onSplitRight?: (paneId: string) => void;
+  onClosePane?: (paneId: string) => void;
+};
 
 export function chatPaneLayoutModel(props: ChatPaneLayoutMenuProps) {
   const layout = props.sidebarLayout;

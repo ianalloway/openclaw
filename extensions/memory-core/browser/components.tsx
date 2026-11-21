@@ -40,7 +40,10 @@ export function createSettingsComponents(components: ControlUiSettingsComponents
   };
   function SettingsSection(props: { title: string; children?: JSX.Element }) {
     const content = contentNode();
-    const mount = createSettingsMountRef<Section>(() => ({ title: props.title, content }), components.mountSection);
+    const mount = createSettingsMountRef<Section>(
+      () => ({ title: props.title, content }),
+      components.mountSection,
+    );
     return (
       <>
         <Portal mount={content}>{props.children}</Portal>

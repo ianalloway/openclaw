@@ -21,17 +21,14 @@ import {
   type MenuHandle,
 } from "../../../components/solid/menu.tsx";
 import { registerChatSessionEnglish } from "../../../i18n/locales/en-chat-session.ts";
-import type { KeyboardShortcutCombo } from "../../../lib/keyboard-shortcut-contract.ts";
 import { registerEnglishCatalog, t } from "../../../lib/reactive/i18n.ts";
 import { listen } from "../../../lib/reactive/listener.ts";
 import { ClearCompanion, ExternalPanelLink } from "../chat-panel-header-actions.tsx";
-import type { ChatPageHost } from "../chat-state-host.ts";
-import type { SidebarLayout, SidebarSlotId } from "../sidebar-layout.ts";
-import type { HeaderMenuQuickAction } from "./chat-header-session-menu.ts";
-import { chatPaneLayoutModel } from "./chat-pane-layout-model.ts";
+import { chatPaneLayoutModel, type ChatPaneLayoutMenuProps } from "./chat-pane-layout-model.ts";
 import type { SidebarPanelDefinition } from "./chat-sidebar-region-types.ts";
 
 export { chatPaneLayoutModel };
+export type { ChatPaneLayoutMenuProps, HeaderPanelAction } from "./chat-pane-layout-model.ts";
 
 registerEnglishCatalog(registerChatSessionEnglish);
 
@@ -41,26 +38,6 @@ const DashboardContent = lazy(() => import("./chat-header-panel-menu-content.tsx
 const LayoutContent = lazy(() => import("./chat-header-panel-menu-content.tsx"), {
   export: "ChatPaneLayoutMenuContent",
 });
-
-export type HeaderPanelAction = HeaderMenuQuickAction & { shortcut?: KeyboardShortcutCombo };
-
-export type ChatPaneLayoutMenuProps = {
-  paneId: string;
-  narrow: boolean;
-  mobile?: boolean;
-  actionsDisabled?: boolean;
-  panelMenuActions?: HeaderPanelAction[];
-  layoutMenuActions?: HeaderMenuQuickAction[];
-  sidebarLayout?: SidebarLayout;
-  panelDefinitions?: SidebarPanelDefinition[];
-  onLayoutChange?: ChatPageHost["updateSidebarLayout"];
-  onToggleSidePanel?: () => void;
-  onCloseSidePanel?: (slot: SidebarSlotId) => void;
-  onOpenSplitView?: () => void;
-  onSplitDown?: (paneId: string) => void;
-  onSplitRight?: (paneId: string) => void;
-  onClosePane?: (paneId: string) => void;
-};
 
 /** Renders definition-owned controls without mounting the panel's content/view. */
 export function ChatPanelHeaderActions(
