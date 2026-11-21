@@ -4,6 +4,7 @@ import { parseDocument } from "yaml";
 
 const policyPath = new URL("../../.github/security-review-policy.yml", import.meta.url);
 /** @type {{
+ *   rolloutRepository: string | undefined,
  *   rolloutPullRequest: number | undefined,
  *   isDependencyManifest: (filename: string) => boolean,
  *   isPackageLockfile: (filename: string) => boolean,
@@ -77,9 +78,19 @@ export function loadSecurityReviewPolicy() {
     "dependencies",
     "rollout",
   ]);
+  let rolloutRepository;
   let rolloutPullRequest;
   if (policy.rollout !== undefined) {
-    const rollout = mapping(policy.rollout, "rollout", ["pull-request"]);
+    const rollout = mapping(policy.rollout, "rollout", ["pull-request", "repository"]);
+    if (rollout.repository !== undefined) {
+      if (
+        typeof rollout.repository !== "string" ||
+        !/^[a-z0-9-]+\/[a-z0-9_.-]+$/iu.test(rollout.repository)
+      ) {
+        invalid("rollout.repository must be an owner/repository name");
+      }
+      rolloutRepository = rollout.repository.toLowerCase();
+    }
     if (!Number.isSafeInteger(rollout["pull-request"]) || rollout["pull-request"] <= 0) {
       invalid("rollout.pull-request must be a positive safe integer");
     }
@@ -113,6 +124,7 @@ export function loadSecurityReviewPolicy() {
   const isPackageLockfile = paths(dependencies.lockfiles, "dependencies.lockfiles");
   const isOtherDependencyFile = paths(dependencies.other, "dependencies.other");
   cachedPolicy = {
+    rolloutRepository,
     rolloutPullRequest,
     isDependencyManifest,
     isPackageLockfile,
