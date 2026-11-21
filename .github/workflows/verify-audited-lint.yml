@@ -1,0 +1,49 @@
+{
+  "name": "Ubuntu merge verification",
+  "on": {
+    "push": {
+      "branches": [
+        "codex/check-audited-lint-8e46ef5d148c-c4231634"
+      ]
+    }
+  },
+  "permissions": {
+    "contents": "read"
+  },
+  "jobs": {
+    "logind": {
+      "name": "Linux desktop sleep and wake regressions",
+      "timeout-minutes": 60,
+      "env": {
+        "CARGO_PROFILE_DEV_DEBUG": "0",
+        "CARGO_PROFILE_TEST_DEBUG": "0",
+        "CARGO_INCREMENTAL": "0"
+      },
+      "steps": [
+        {
+          "name": "Check out source revision",
+          "uses": "actions/checkout@11d5960a326750d5838078e36cf38b85af677262",
+          "with": {
+            "ref": "8e46ef5d148c801d383637425cd15cdfdaf69624",
+            "fetch-depth": 2,
+            "persist-credentials": false
+          }
+        },
+        {
+          "name": "Confirm exact merge revision and GitHub-hosted Ubuntu",
+          "run": "test \"$(git rev-parse HEAD)\" = 8e46ef5d148c801d383637425cd15cdfdaf69624\ntest \"$RUNNER_ENVIRONMENT\" = github-hosted\n. /etc/os-release\ntest \"$ID\" = ubuntu\necho \"Verified $(git rev-parse HEAD) on $PRETTY_NAME ($RUNNER_ENVIRONMENT)\""
+        },
+        {
+          "name": "Install desktop build and private D-Bus test dependencies",
+          "run": "sudo apt-get update -qq\nsudo apt-get install -y --no-install-recommends dbus-daemon libayatana-appindicator3-dev librsvg2-dev libssl-dev libwebkit2gtk-4.1-dev libxdo-dev\ndbus-daemon --version\nrustup toolchain install stable --profile minimal --component rustfmt"
+        },
+        {
+          "name": "Check formatting and run all six private-bus integrations",
+          "working-directory": "apps/linux/src-tauri",
+          "run": "cargo +stable fmt --check\ncargo +stable test --locked --test logind_sleep -- --nocapture 2>&1 | tee \"$RUNNER_TEMP/logind-tests.log\"\ngrep -F \"6 passed; 0 failed; 0 ignored\" \"$RUNNER_TEMP/logind-tests.log\"\nif grep -F \"SKIP logind_sleep\" \"$RUNNER_TEMP/logind-tests.log\"; then exit 1; fi"
+        }
+      ],
+      "runs-on": "ubuntu-24.04"
+    }
+  }
+}
