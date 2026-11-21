@@ -22,7 +22,6 @@ import { AttachmentPreview, AttachmentReadStatus } from "./chat-attachments.tsx"
 import { ComposerContent } from "./chat-composer-content.tsx";
 import { ContextNotice } from "./chat-composer-context.tsx";
 import { renderChatPrimaryActionsSolid as ChatPrimaryActions } from "./chat-composer-controls.tsx";
-import { ChatComposerDisabledBanner } from "./chat-composer-disabled-banner.tsx";
 import "../../../styles/chat/emoji-menu.css";
 import "../../../styles/chat/mention-menu.css";
 import { focusComposerFromChrome, paneDomId } from "./chat-composer-dom.ts";
@@ -44,6 +43,9 @@ import { ChatVoiceStatus, ComposerDictationStatus } from "./chat-voice-activity.
 
 type ChatComposerViewContext = ReturnType<typeof createChatComposerContext>;
 
+const DisabledBanner = lazy(() => import("./chat-composer-disabled-banner.tsx"), {
+  export: "ChatComposerDisabledBanner",
+});
 const SlashMenu = lazy(() => import("./chat-composer-slash-menu.tsx"), { export: "SlashMenu" });
 const SkillMenu = lazy(() => import("./chat-composer-skill-menu.tsx"), { export: "SkillMenu" });
 const HumanMentionMenuView = lazy(() => import("./chat-composer-mention-menu.tsx"), {
@@ -121,12 +123,12 @@ export function renderChatComposerView(
       (props.realtimeTalkCameraDevices?.length ?? 0) >= 2 && Boolean(props.onSwitchRealtimeCamera),
   );
   const slashMenuAnnouncementId = () => paneDomId(props.paneId, "slash-active-announcement");
-  // A restored replacement must join the first composer frame, including its height.
+  // Commit the shell and its replacement banner in the same frame.
   // Owner refreshes keep the focused action's DOM while updating the banner and callbacks.
   const disabledBanner = (
     <Show when={props.disabledBanner?.presentation !== "hidden" ? props.disabledBanner : undefined}>
       {(banner) => (
-        <ChatComposerDisabledBanner
+        <DisabledBanner
           banner={banner()}
           showAbortableUi={context().showAbortableUi}
           runControls={context().runControlsProps}
@@ -225,7 +227,7 @@ export function renderChatComposerView(
     ) : undefined;
   });
   const fallbackStatus = createMemo(() => renderFallbackIndicatorSolid(props.fallbackStatus));
-  return (
+  const composer = () => (
     <div
       class="agent-chat__composer-shell"
       ref={[footerControl, (element) => (shell = element), elementRef(props.onComposerShellRef)]}
@@ -630,4 +632,5 @@ export function renderChatComposerView(
       )}
     </div>
   );
+  return <ChatLazyBoundary>{composer()}</ChatLazyBoundary>;
 }
