@@ -114,10 +114,32 @@ it.each(["parent", "popout"] as const)("only delivers messages from the %s RPC w
     DiscordSDK,
   });
   expect(ready).toHaveBeenCalledOnce();
-  const listener = addEventListener.mock.calls[0][1];
+  const listener = addEventListener.mock.calls[0]?.[1];
+  if (!listener) {
+    throw new Error("Expected the Discord RPC message listener to be registered");
+  }
   const stopImmediatePropagation = vi.fn();
-  listener({ source: opener ?? parent, stopImmediatePropagation } as unknown as MessageEvent);
-  expect(stopImmediatePropagation).not.toHaveBeenCalled();
+  const source = opener ?? parent;
+  for (const data of [
+    [0, {}],
+    [1, { cmd: "DISPATCH", evt: "READY" }],
+    [1, { cmd: "AUTHORIZE", evt: null }],
+    [1, { cmd: "AUTHENTICATE", evt: null }],
+    [1, { cmd: "CAPTURE_LOG", evt: null }],
+    [2, { code: 1000 }],
+    [3, {}],
+  ]) {
+    listener({ source, data, stopImmediatePropagation } as unknown as MessageEvent);
+    expect(stopImmediatePropagation).not.toHaveBeenCalled();
+  }
+  for (const data of [
+    [1, { cmd: "GET_RELATIONSHIPS", evt: null }],
+    [1, { cmd: "DISPATCH", evt: "RELATIONSHIP_UPDATE" }],
+  ]) {
+    stopImmediatePropagation.mockClear();
+    listener({ source, data, stopImmediatePropagation } as unknown as MessageEvent);
+    expect(stopImmediatePropagation).toHaveBeenCalledOnce();
+  }
   for (const source of [{}, null]) {
     stopImmediatePropagation.mockClear();
     listener({ source, stopImmediatePropagation } as unknown as MessageEvent);
