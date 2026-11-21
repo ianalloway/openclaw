@@ -1,5 +1,5 @@
 import type { JSX } from "@solidjs/web";
-import { createMemo, createSignal, createUniqueId, Show } from "solid-js";
+import { untrack, createMemo, createSignal, createUniqueId, Show } from "solid-js";
 import { Icon } from "../../../components/solid/icon.tsx";
 import { Menu, type MenuControls, type MenuItem } from "../../../components/solid/menu.tsx";
 import { resolveAvatarInitials } from "../../../lib/identity-avatar.ts";
@@ -92,7 +92,7 @@ export function createGitHubPublicationAccountMenuItems(
 
 export function GitHubPublicationMenu(props: GitHubPublicationMenuProps) {
   const id = createUniqueId();
-  const triggerRef = props.controls?.ref();
+  const triggerRef = untrack(() => props.controls?.ref());
   const presentation = createMemo(() => projectPresentation(props.presented));
   const selectedChoice = () => props.choices.find((choice) => choice.source === props.selected);
   const label = () => {

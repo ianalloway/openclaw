@@ -34,23 +34,27 @@ export function ChatDetailSlot(props: ChatDetailSlotProps) {
   }));
   const sourceContent = createMemo(() => props.content);
   const content = createMemo(() => {
-    const value = sourceContent();
-    if (value.kind === "tool-output" || value.kind === "loading" || value.kind === "unavailable") {
+    const initialContent = sourceContent();
+    if (
+      initialContent.kind === "tool-output" ||
+      initialContent.kind === "loading" ||
+      initialContent.kind === "unavailable"
+    ) {
       return null;
     }
-    if (value.kind !== "session-diff") {
-      return value;
+    if (initialContent.kind !== "session-diff") {
+      return initialContent;
     }
-    const openFile = value.openFile;
+    const openFile = initialContent.openFile;
     return {
-      ...value,
+      ...initialContent,
       presentation: {
-        ...value.presentation,
+        ...initialContent.presentation,
         openFileView:
-          value.presentation?.openFileView ??
-          (value.openFile
+          initialContent.presentation?.openFileView ??
+          (initialContent.openFile
             ? (path: string, view: import("./chat-sidebar-content-types.ts").FileReaderView) => {
-                if (value.owner !== getSessionWorkspace(props.host)) {
+                if (initialContent.owner !== getSessionWorkspace(props.host)) {
                   return;
                 }
                 // The workspace owner resolves aliases and retains the actual file/editor identity.
@@ -61,7 +65,7 @@ export function ChatDetailSlot(props: ChatDetailSlotProps) {
               }
             : undefined),
         get onOpenMobilePage() {
-          return props.onOpenMobilePage ?? value.presentation?.onOpenMobilePage;
+          return props.onOpenMobilePage ?? initialContent.presentation?.onOpenMobilePage;
         },
       },
       openFile: openFile

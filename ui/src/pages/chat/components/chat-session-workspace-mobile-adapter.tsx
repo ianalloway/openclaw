@@ -308,13 +308,23 @@ export function MobileWorkspaceContents(props: {
   const selectedFilter = createMemo(() => props.workspace.filter);
   const connected = createMemo(() => props.workspace.connected);
   const cachedBrowser = createMemo(() => props.workspace.directories?.[path()]?.browser);
+  const changedExpanded = createMemo(
+    () => props.workspace.mobileNavigation?.expandedGroups.changed ?? true,
+  );
+  const readExpanded = createMemo(
+    () => props.workspace.mobileNavigation?.expandedGroups.read ?? false,
+  );
+  const artifactsExpanded = createMemo(
+    () => props.workspace.mobileNavigation?.expandedGroups.artifacts ?? false,
+  );
+  const workspaceExpanded = createMemo(
+    () => props.workspace.mobileNavigation?.expandedGroups.workspace ?? true,
+  );
   const expanded = {
-    changed: createMemo(() => props.workspace.mobileNavigation?.expandedGroups.changed ?? true),
-    read: createMemo(() => props.workspace.mobileNavigation?.expandedGroups.read ?? false),
-    artifacts: createMemo(
-      () => props.workspace.mobileNavigation?.expandedGroups.artifacts ?? false,
-    ),
-    workspace: createMemo(() => props.workspace.mobileNavigation?.expandedGroups.workspace ?? true),
+    changed: changedExpanded,
+    read: readExpanded,
+    artifacts: artifactsExpanded,
+    workspace: workspaceExpanded,
   };
   const onRetry = () => props.workspace.onRetry?.();
   /** Mobile keeps native groups; desktop's tree is a different presentation of the same owner. */

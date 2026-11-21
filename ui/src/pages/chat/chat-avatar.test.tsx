@@ -527,7 +527,7 @@ describe("ChatAvatar", () => {
     expect(slot?.classList.contains("is-fallback")).toBe(true);
     expect(slot?.querySelector(".chat-avatar--sender-initials")?.textContent?.trim()).toBe("B");
 
-    setUser({ ...user() });
+    setUser((previous) => ({ ...previous }));
     flush();
     expect(container.querySelector(".chat-avatar-slot")).toBe(slot);
     expect(slot?.classList.contains("is-fallback")).toBe(true);

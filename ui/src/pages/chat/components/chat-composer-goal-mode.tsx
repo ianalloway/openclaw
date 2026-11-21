@@ -11,10 +11,12 @@ import type { ChatComposerProps, ChatComposerState } from "./chat-composer-types
 
 registerEnglishCatalog(registerChatGoalsEnglish);
 
+function readLiveGoalMode({ draftSource, goalDraftMode }: ChatComposerProps) {
+  return (draftSource ? draftSource.read().goalDraftMode : goalDraftMode) ?? null;
+}
+
 export function createGoalComposer(readProps: () => ChatComposerProps, state: ChatComposerState) {
   const mode = () => readProps().goalDraftMode ?? null;
-  const liveMode = (props: ChatComposerProps) =>
-    (props.draftSource ? props.draftSource.read().goalDraftMode : props.goalDraftMode) ?? null;
   const [pending, setPending] = state.goalPending;
   // Updaters read staged writes too, so a second action cannot beat the render flush.
   const pendingNow = (current: ChatGoalDraftMode | null) =>
@@ -37,7 +39,7 @@ export function createGoalComposer(readProps: () => ChatComposerProps, state: Ch
     }
   };
   const cancel = () => {
-    const current = liveMode(readProps());
+    const current = readLiveGoalMode(readProps());
     if (!current || pendingNow(current)) {
       return;
     }
@@ -46,7 +48,11 @@ export function createGoalComposer(readProps: () => ChatComposerProps, state: Ch
   };
   const begin = (goal?: SessionGoal, commandObjective?: string) => {
     const props = readProps();
-    if (!props.onGoalSubmit || !props.onGoalDraftModeChange || pendingNow(liveMode(props))) {
+    if (
+      !props.onGoalSubmit ||
+      !props.onGoalDraftModeChange ||
+      pendingNow(readLiveGoalMode(props))
+    ) {
       return false;
     }
     const previousDraft = state.composerTextarea?.value ?? props.getDraft?.() ?? props.draft;
@@ -82,7 +88,7 @@ export function createGoalComposer(readProps: () => ChatComposerProps, state: Ch
   };
   const restoreCommand = () => {
     const props = readProps();
-    const current = liveMode(props);
+    const current = readLiveGoalMode(props);
     if (
       current?.action !== "start" ||
       !current.fromCommand ||
@@ -99,7 +105,7 @@ export function createGoalComposer(readProps: () => ChatComposerProps, state: Ch
   };
   const activateDraft = (draft: string, submitting = false) => {
     const props = readProps();
-    const current = liveMode(props);
+    const current = readLiveGoalMode(props);
     if (pendingNow(current)) {
       return false;
     }
@@ -125,7 +131,7 @@ export function createGoalComposer(readProps: () => ChatComposerProps, state: Ch
   };
   return {
     get active() {
-      return liveMode(readProps()) !== null;
+      return readLiveGoalMode(readProps()) !== null;
     },
     get pending() {
       return Boolean(mode() && pending() === mode());
@@ -151,7 +157,7 @@ export function createGoalComposer(readProps: () => ChatComposerProps, state: Ch
     restoreCommand,
     async submit(submissionAction?: Event) {
       const props = readProps();
-      const current = liveMode(props);
+      const current = readLiveGoalMode(props);
       const key = composerDraftKey(props);
       const objective = state.composerTextarea?.value ?? props.getDraft?.() ?? props.draft;
       if (!current || !props.onGoalSubmit || !objective.trim()) {
@@ -183,7 +189,7 @@ export function createGoalComposer(readProps: () => ChatComposerProps, state: Ch
           submitted &&
           state.composerDraftScope?.key === key &&
           composerDraftKey(live) === key &&
-          liveMode(live) === current
+          readLiveGoalMode(live) === current
         ) {
           clearMode(current);
         }

@@ -1,0 +1,145 @@
+import { t } from "../../../lib/reactive/i18n.ts";
+import {
+  ensureSidebarConversation,
+  promoteSidebarPanel,
+  setSidebarDock,
+  setSidebarExpanded,
+  sidebarActivePanel,
+  sidebarDock,
+  sidebarMainPanel,
+  toggleSidebarPanelExpanded,
+} from "../sidebar-layout.ts";
+import type { ChatPaneLayoutMenuProps } from "./chat-header-panel-actions.tsx";
+import type { ChatQuickAction } from "./chat-quick-action.tsx";
+
+export function chatPaneLayoutModel(props: ChatPaneLayoutMenuProps) {
+  const layout = props.sidebarLayout;
+  const definitions = props.panelDefinitions ?? [];
+  const side = layout ? sidebarActivePanel(layout) : undefined;
+  const mainSlot = layout ? (sidebarMainPanel(layout)?.slot ?? "conversation") : "conversation";
+  const mainDefinition = definitions.find((definition) => definition.slot === mainSlot);
+  const sideDefinition = definitions.find((definition) => definition.slot === side?.slot);
+  const split = layout?.open === true && !layout.expanded;
+  const actions: ChatQuickAction[] = [];
+  if (layout && props.onLayoutChange && (split || layout.expanded)) {
+    actions.push({
+      id: "focus",
+      className: "chat-panel-focus",
+      label: t(layout.expanded ? "chat.sidePanel.restore" : "chat.sidePanel.expand"),
+      icon: layout.expanded ? "minimize" : "maximize",
+      active: layout.expanded === true,
+      onActivate: () =>
+        props.onLayoutChange?.(
+          setSidebarExpanded(ensureSidebarConversation(layout), layout.expanded !== true),
+          { dashboardPresentation: "personal" },
+        ),
+    });
+  }
+  if (layout && props.onLayoutChange && split && side && mainDefinition && sideDefinition) {
+    actions.push({
+      id: "swap",
+      className: "chat-panel-swap",
+      label: t("chat.sidePanel.swap", { main: mainDefinition.label, side: sideDefinition.label }),
+      icon: "arrowLeftRight",
+      onActivate: () => props.onLayoutChange?.(promoteSidebarPanel(layout, side.id)),
+    });
+  }
+  if (
+    layout &&
+    side &&
+    sideDefinition &&
+    !layout.expanded &&
+    !props.narrow &&
+    props.onLayoutChange
+  ) {
+    actions.push({
+      id: "expand-side-panel",
+      className: "side-panel__expand",
+      label: t("chat.sidePanel.expandPanel", { panel: sideDefinition.label }),
+      icon: "maximize",
+      onActivate: () =>
+        props.onLayoutChange?.(toggleSidebarPanelExpanded(layout, side.id), {
+          dashboardPresentation: "personal",
+        }),
+    });
+  }
+  if (side && sideDefinition && props.onCloseSidePanel) {
+    actions.push({
+      id: "close-side-panel",
+      label: t("chat.sidebarColumns.close", { panel: sideDefinition.label }),
+      icon: "x",
+      onActivate: async () => {
+        if (props.mobile === false && side.slot === "companion") {
+          const paneId = props.paneId;
+          const clear = sideDefinition.view?.onClearCompanion;
+          if (
+            !clear ||
+            !(await clear()) ||
+            props.paneId !== paneId ||
+            !props.sidebarLayout ||
+            sidebarActivePanel(props.sidebarLayout)?.id !== side.id
+          ) {
+            return;
+          }
+        }
+        props.onCloseSidePanel?.(side.slot);
+      },
+    });
+  }
+  if (props.onToggleSidePanel) {
+    actions.push({
+      id: "side-panel",
+      className: "chat-side-panel-toggle",
+      label: t(split ? "chat.sidePanel.minimize" : "chat.sidePanel.label"),
+      icon: split ? "panelRightClose" : "panelRightOpen",
+      active: split,
+      onActivate: props.onToggleSidePanel,
+    });
+  }
+  actions.push(...(props.layoutMenuActions ?? []));
+  for (const [id, label, icon, callback] of [
+    ["open-split-view", "chat.splitView.open", "columns2", props.onOpenSplitView],
+    ["split-down", "chat.splitView.splitDown", "panelBottomOpen", props.onSplitDown],
+    ["split-right", "chat.splitView.splitRight", "panelRightOpen", props.onSplitRight],
+    ["close-pane", "chat.splitView.closePane", "x", props.onClosePane],
+  ] as const) {
+    if (callback && (!props.narrow || (id !== "split-down" && id !== "split-right"))) {
+      actions.push({
+        id,
+        label: t(label),
+        className: id === "open-split-view" ? "chat-open-split-view" : `chat-pane__${id}`,
+        icon,
+        disabled: props.actionsDisabled,
+        onActivate: () =>
+          id === "open-split-view" ? props.onOpenSplitView?.() : callback(props.paneId),
+      });
+    }
+  }
+  if (layout && props.onLayoutChange && !props.narrow && split) {
+    for (const [dock, label, icon] of [
+      ["left", "dockLeft", "panelLeftOpen"],
+      ["right", "dockRight", "panelRightOpen"],
+      ["bottom", "dockBottom", "panelBottomOpen"],
+    ] as const) {
+      actions.push({
+        id: `dock-${dock}`,
+        label: t(`chat.sidePanel.${label}`),
+        icon,
+        active: sidebarDock(layout) === dock,
+        onActivate: () =>
+          props.onLayoutChange?.(setSidebarDock(layout, dock), { geometryOnly: true }),
+      });
+    }
+  }
+  const panelActions: ChatQuickAction[] = props.panelMenuActions ?? [];
+  const allActions = [...actions, ...panelActions];
+  return {
+    actions,
+    panelActions,
+    allActions,
+    mainHeaderActionView: mainDefinition?.headerActionView,
+    sideHeaderActionView: sideDefinition?.headerActionView,
+    mainHeaderLink: mainDefinition?.headerLink,
+    sideHeaderLink: sideDefinition?.headerLink,
+  };
+}

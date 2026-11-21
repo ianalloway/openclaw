@@ -295,6 +295,24 @@
       }
     },
     {
+      "files": ["ui/src/pages/chat/**/*.tsx"],
+      // These chat adapters retain accessors for effects, DOM refs, or a later assertion.
+      "rules": {
+        "solid/reactivity": ["warn", {
+          "customReactiveFunctions": [
+            "attachmentAdmissionRef",
+            "attachmentContextCopyRef",
+            "elementRef",
+            "liveValue",
+            "merge",
+            "messageOverflowRef",
+            "projectProgressCard",
+            "waitForSolid"
+          ]
+        }]
+      }
+    },
+    {
       "files": [
         "ui/**/*.{ts,tsx}",
         "extensions/*/browser/**/*.{ts,tsx}",

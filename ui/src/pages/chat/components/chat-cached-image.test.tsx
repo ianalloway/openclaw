@@ -1,6 +1,6 @@
 /* @vitest-environment jsdom */
 import { Blob as NodeBlob } from "node:buffer";
-import { createSignal } from "solid-js";
+import { untrack, createSignal } from "solid-js";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import type { ChatRowDisplayFacts } from "../../../lib/chat/row-display-facts.ts";
 import { mountSolid } from "../../../test-helpers/mount-solid.ts";
@@ -129,7 +129,7 @@ it("records displayed bytes only from HTTP cache without replacing the live imag
     });
     image.dispatchEvent(new Event("load"));
     await waitForSolid(() => expect(facts().images?.[key]?.thumbnail).toBeInstanceOf(Blob));
-    expect(facts().images?.[key]).toMatchObject({ width: 480, height: 240 });
+    expect(untrack(facts).images?.[key]).toMatchObject({ width: 480, height: 240 });
     expect(frame.style.cssText).toBe(reservedSize);
     expect(fetch).toHaveBeenCalledWith(expect.stringContaining("variant=thumbnail"), {
       cache: "only-if-cached",

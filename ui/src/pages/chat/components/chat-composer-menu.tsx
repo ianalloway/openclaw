@@ -1,5 +1,5 @@
 import type { JSX } from "@solidjs/web";
-import { createContext, For, onSettled, useContext } from "solid-js";
+import { createContext, For, untrack, onSettled, useContext } from "solid-js";
 import { useScrollState } from "../../../components/solid/scroll-state.ts";
 import { registerChatComposerInvocationMenu } from "./chat-picker-overlay.ts";
 
@@ -83,10 +83,14 @@ export function ComposerMenu(options: {
       ? registerChatComposerInvocationMenu(element, options.getTextarea)
       : undefined,
   );
-  const scrollRef = useScrollState(false, options.trackScroll !== false, {
-    revision: () => options.revision,
-    activeId: () => options.activeId,
-  });
+  const scrollRef = useScrollState(
+    false,
+    untrack(() => options.trackScroll !== false),
+    {
+      revision: () => options.revision,
+      activeId: () => options.activeId,
+    },
+  );
   return (
     <ComposerMenuPointer value={pointerMoved}>
       <div

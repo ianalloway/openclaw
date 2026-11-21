@@ -150,10 +150,14 @@ export const ChatFilesPanel = defineSolidBridge<Props, Methods>(
         label,
         title: content.kind === "file" ? content.path : label,
         get icon() {
-          return content.kind === "mcp-app" ? (
-            <McpAppIcon icons={content.launch.entrypoint.icons ?? []} />
-          ) : (
-            <AttachmentFileIcon filename={label} mode="preview-with-favicon" />
+          return (
+            <>
+              {content.kind === "mcp-app" ? (
+                <McpAppIcon icons={content.launch.entrypoint.icons ?? []} />
+              ) : (
+                <AttachmentFileIcon filename={label} mode="preview-with-favicon" />
+              )}
+            </>
           );
         },
         className:
@@ -353,11 +357,11 @@ export const ChatFilesPanel = defineSolidBridge<Props, Methods>(
               const source = createMemo(() => entry());
               const currentContent = createMemo(() => entry().content);
               const detail = createMemo(() => {
-                const current = source();
+                const initialEntry = source();
                 const pending = readResult().pending;
                 currentContent();
                 const resolved = () => {
-                  const value = current.content;
+                  const value = initialEntry.content;
                   if (value.kind === "unavailable") {
                     throw new Error(value.message);
                   }

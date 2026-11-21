@@ -1,4 +1,14 @@
-import { Loading, Show, lazy, createMemo, createSignal, onSettled, useContext } from "solid-js";
+import {
+  createEffect,
+  untrack,
+  Loading,
+  Show,
+  lazy,
+  createMemo,
+  createSignal,
+  onSettled,
+  useContext,
+} from "solid-js";
 import { handleMarkdownCodeBlockClick } from "../../../components/markdown-code-blocks.ts";
 import {
   linkReaderPrefetchRef as createLinkReaderPrefetchRef,
@@ -107,12 +117,12 @@ type ChatThreadInput = {
 export function ChatThread(input: ChatThreadInput) {
   // Use the existing warm-frame hold to split pane and transcript construction.
   // Cached route handoffs still render immediately.
-  const initialRestoring = Boolean(input.props.restoring);
+  const initialRestoring = untrack(() => Boolean(input.props.restoring));
   const heldWarmBoot =
     initialRestoring &&
     document.documentElement.getAttribute("data-openclaw-warm-frame") === "holding";
   const initialReady =
-    (initialRestoring && !heldWarmBoot) || Boolean(input.props.initialSubmission);
+    (initialRestoring && !heldWarmBoot) || untrack(() => Boolean(input.props.initialSubmission));
   const [ready, setReady] = createSignal(initialReady);
   const needsAutomation = createMemo(
     () =>
@@ -216,24 +226,26 @@ function ChatThreadContent(
   let stopSelectionGesture: (() => void) | undefined;
   const historyIntent = (event: Event) => input.props.onHistoryIntent?.(event);
   const paneId = createMemo(() => input.props.paneId);
-  onSettled(() => {
-    const element = root();
-    const unregister = element && registerTranscriptElement(paneId(), element);
-    const searchState = getTranscriptState(paneId()).search;
-    let query = searchState.snapshot.query.trim();
-    const stopSearch = searchState.subscribe(() => {
-      const nextQuery = searchState.snapshot.query.trim();
-      if (nextQuery && nextQuery !== query) {
-        // A live reply remains below the matches; end-follow must not hide them.
-        input.transcript.scrollToOffset(0);
-      }
-      query = nextQuery;
-    });
-    return () => {
-      stopSearch();
-      unregister?.();
-    };
-  });
+  createEffect(
+    () => [root(), paneId()] as const,
+    ([element, id]) => {
+      const unregister = element && registerTranscriptElement(id, element);
+      const searchState = getTranscriptState(id).search;
+      let query = searchState.snapshot.query.trim();
+      const stopSearch = searchState.subscribe(() => {
+        const nextQuery = searchState.snapshot.query.trim();
+        if (nextQuery && nextQuery !== query) {
+          // A live reply remains below the matches; end-follow must not hide them.
+          input.transcript.scrollToOffset(0);
+        }
+        query = nextQuery;
+      });
+      return () => {
+        stopSearch();
+        unregister?.();
+      };
+    },
+  );
   const search = createMemo(() =>
     projectOwner(getTranscriptState(paneId()).search, (owner) => owner.snapshot, Object.is),
   );
@@ -273,7 +285,8 @@ function ChatThreadContent(
     },
   );
   const splitColdRows =
-    !input.props.restoring && !input.props.initialSubmission && splitChatConstruction;
+    splitChatConstruction &&
+    untrack(() => !input.props.restoring && !input.props.initialSubmission);
   const started = splitColdRows ? performance.now() : 0;
   const current = createMemo(() => {
     const searchState = search().read();
@@ -296,7 +309,7 @@ function ChatThreadContent(
   });
   // Sample once before choosing the first row frame; cheap preparations need no placeholder.
   if (splitColdRows) {
-    current();
+    untrack(current);
   }
   const [renderReady, setRenderReady] = createSignal(
     !splitColdRows || performance.now() - started <= 15,
