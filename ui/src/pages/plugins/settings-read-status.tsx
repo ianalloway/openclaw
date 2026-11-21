@@ -1,5 +1,5 @@
 import type { JSX } from "@solidjs/web";
-import { createMemo, Errored, Loading } from "solid-js";
+import { createMemo, Errored, Loading, untrack } from "solid-js";
 import { SettingsLoadingSkeleton } from "../../components/solid/settings-ui.tsx";
 import { formatUiError } from "../../lib/format-error.ts";
 import type { PluginSettingsEditorModel } from "./settings-model.ts";
@@ -39,7 +39,7 @@ export function PluginSettingsReadStatus(props: {
       const schemaOutcome = schema();
       const configOutcome = await read?.settled;
       // Retired reads and later writes own separate outcomes.
-      const failed = [config() === read ? configOutcome : null, schemaOutcome].find(
+      const failed = [untrack(() => config()) === read ? configOutcome : null, schemaOutcome].find(
         (outcome) => outcome && !outcome.ok && outcome.error === currentError,
       );
       if (failed && !failed.ok) {

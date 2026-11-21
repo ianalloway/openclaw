@@ -29,7 +29,8 @@ export function SessionPicker(props: {
   onAfterHide?: () => void;
   ref?: (handle: PopoverHandle) => void;
 }) {
-  const navigation = props.kind === "checkout" ? null : createPickerNavigation();
+  const pickerNavigation = createPickerNavigation();
+  const navigation = () => (props.kind === "checkout" ? null : pickerNavigation);
   let trigger!: HTMLButtonElement;
   let popover!: PopoverHandle;
   let cleanup: (() => void) | undefined;
@@ -95,7 +96,7 @@ export function SessionPicker(props: {
         placement="bottom-start"
         onOpenChange={(open) => {
           if (!open) {
-            navigation?.clear();
+            pickerNavigation.clear();
           }
           const callbacks = props.params.place.browser.popoverCallbacks(props.kind);
           callbacks[open ? "onPopoverShow" : "onPopoverHide"]();
@@ -139,7 +140,7 @@ export function SessionPicker(props: {
             )}
           >
             <Loading fallback={<PickerSkeleton />}>
-              <PickerNavigation value={navigation}>{props.children}</PickerNavigation>
+              <PickerNavigation value={navigation()}>{props.children}</PickerNavigation>
             </Loading>
           </Errored>
         </div>
