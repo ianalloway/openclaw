@@ -203,11 +203,6 @@ function cliFixture(cliSource: string) {
   const donor = createToolingDependencyFixture(tempDirs.make("openclaw-line-cap-admission-"));
   const { env } = installLineCapToolingFixture(donor.checkout, donor.tooling);
   const root = fixture(2, "warn", [], donor.checkout);
-  const origin = execFileSync("git", ["remote", "get-url", "origin"], {
-    cwd: root,
-    encoding: "utf8",
-  }).trim();
-  git(donor.tooling, "remote", "set-url", "origin", origin);
   const manifest = JSON.parse(fs.readFileSync(path.join(root, "package.json"), "utf8"));
   donor.writePackage("tsx", "export {};", manifest.devDependencies.tsx);
   donor.writePackage("json5", "export default JSON;", manifest.dependencies.json5);
