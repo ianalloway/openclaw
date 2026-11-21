@@ -100,6 +100,19 @@ try {
 
 it.each<[Options, string, number]>([
   [{ policy: { rollout: undefined } }, "enforced", 0],
+  [
+    { policy: { rollout: { "pull-request": rolloutNumber, repository: "upstream/other" } } },
+    "enforced",
+    0,
+  ],
+  [
+    {
+      policy: { rollout: { "pull-request": rolloutNumber, repository: "OpenClaw/OpenClaw" } },
+      comparison: rebased,
+    },
+    "enforced",
+    2,
+  ],
   [{ rollout: { ...rollout, state: "open", merged: false, merged_at: null } }, "inactive", 1],
   [{ pullRequest: { ...pullRequest, created_at: mergedAt } }, "enforced", 1],
   [{ pullRequest: { ...pullRequest, head: { sha: mergeCommit } } }, "enforced", 1],
@@ -117,6 +130,7 @@ it.each([
   { "pull-request": 1.5 },
   { "pull-request": Number.MAX_SAFE_INTEGER + 1 },
   { "pull-request": rolloutNumber, unknown: true },
+  { "pull-request": rolloutNumber, repository: "invalid" },
 ])("rejects invalid rollout configuration (%j)", (value) => {
   const result = evaluate({ policy: { rollout: value } });
   expect(result).toMatchObject({ status: 1, requests: [] });

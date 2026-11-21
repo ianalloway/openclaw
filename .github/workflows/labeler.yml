@@ -22,10 +22,11 @@ env:
 permissions: {}
 
 jobs:
+  # These jobs use the upstream organization’s GitHub Apps and maintainer team.
   label:
     if: >-
       ${{ (
-        github.event_name == 'pull_request_target' &&
+        github.repository == 'openclaw/openclaw' && github.event_name == 'pull_request_target' &&
         (
           github.event.action != 'edited' ||
           github.event.changes.title ||
@@ -420,7 +421,7 @@ jobs:
             }
 
   backfill-pr-labels:
-    if: github.event_name == 'workflow_dispatch'
+    if: github.repository == 'openclaw/openclaw' && github.event_name == 'workflow_dispatch'
     concurrency:
       group: ${{ github.workflow }}-${{ github.ref || github.run_id }}
       cancel-in-progress: false
@@ -652,7 +653,7 @@ jobs:
 
   label-issues:
     if: >-
-      ${{ (github.event_name == 'issues' &&
+      ${{ (github.repository == 'openclaw/openclaw' && github.event_name == 'issues' &&
         (github.event.action != 'edited' || !github.event.changes || github.event.changes.title)) }}
     concurrency:
       group: ${{ github.workflow }}-issue-${{ github.event.issue.number }}

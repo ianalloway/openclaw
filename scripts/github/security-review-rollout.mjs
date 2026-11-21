@@ -25,8 +25,11 @@ function sha(value, name) {
 
 /** @returns {Promise<{ mode: "inactive" | "grandfathered" | "enforced" }>} */
 export async function securityReviewRollout({ api, owner, repo, pullRequest }) {
-  const { rolloutPullRequest } = loadSecurityReviewPolicy();
-  if (rolloutPullRequest === undefined) {
+  const { rolloutRepository, rolloutPullRequest } = loadSecurityReviewPolicy();
+  if (
+    rolloutPullRequest === undefined ||
+    (rolloutRepository !== undefined && rolloutRepository !== `${owner}/${repo}`.toLowerCase())
+  ) {
     return { mode: "enforced" };
   }
   const rollout = await api.request(`/repos/${owner}/${repo}/pulls/${rolloutPullRequest}`);
