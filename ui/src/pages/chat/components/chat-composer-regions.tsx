@@ -37,6 +37,9 @@ export function ComposerQueue(view: { composer: ChatComposerProps; showAbortable
           onQueueRetry={canAct() ? view.composer.onQueueRetry : undefined}
           onQueueSteer={canAct() ? view.composer.onQueueSteer : undefined}
           onQueueMove={view.composer.onQueueMove}
+          queuePaused={view.composer.queuePaused}
+          onQueueResume={canAct() ? view.composer.onQueueResume : undefined}
+          onQueueClear={view.composer.onQueueClear}
           queuedEdit={view.composer.queuedEdit}
           onQueueRemove={view.composer.onQueueRemove}
         />
@@ -104,6 +107,30 @@ export function ComposerProgress(view: { composer: ChatComposerProps; shown: boo
           />
         </ChatLazyBoundary>
       </div>
+    </Show>
+  );
+}
+
+const WorktreeRestoreNotice = lazy(() => import("./chat-worktree-restore-notice.tsx"), {
+  export: "ChatWorktreeRestoreNotice",
+});
+
+export function ComposerWorkspaceNotice(
+  props: ChatComposerProps & { children?: import("@solidjs/web").JSX.Element },
+) {
+  return (
+    <Show
+      when={
+        props.selectedSession?.worktreeState && props.selectedSession.worktreeState !== "ready"
+          ? props.selectedSession.worktree?.id
+          : undefined
+      }
+      keyed
+      fallback={props.children}
+    >
+      <ChatLazyBoundary>
+        <WorktreeRestoreNotice {...props} />
+      </ChatLazyBoundary>
     </Show>
   );
 }

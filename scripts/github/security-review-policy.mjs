@@ -6,6 +6,7 @@ const policyPath = new URL("../../.github/security-review-policy.yml", import.me
 /** @type {{
  *   rolloutRepository: string | undefined,
  *   rolloutPullRequest: number | undefined,
+ *   isReleaseManifest: (filename: string) => boolean,
  *   isDependencyManifest: (filename: string) => boolean,
  *   isPackageLockfile: (filename: string) => boolean,
  *   isDependencyFile: (filename: string) => boolean,
@@ -117,6 +118,7 @@ export function loadSecurityReviewPolicy() {
   }
   const dependencies = mapping(policy.dependencies, "dependencies", [
     "manifests",
+    "release-manifests",
     "lockfiles",
     "other",
   ]);
@@ -127,6 +129,7 @@ export function loadSecurityReviewPolicy() {
     rolloutRepository,
     rolloutPullRequest,
     isDependencyManifest,
+    isReleaseManifest: paths(dependencies["release-manifests"], "dependencies.release-manifests"),
     isPackageLockfile,
     isDependencyFile: (filename) => isPackageLockfile(filename) || isOtherDependencyFile(filename),
     collectSecuritySensitiveChanges(files) {

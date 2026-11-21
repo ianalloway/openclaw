@@ -17,6 +17,7 @@ import { ignoreMissingPath } from "../../infra/errno.js";
 import { formatErrorMessage, hasErrnoCode } from "../../infra/errors.js";
 import { resolveExecutablePath } from "../../infra/executable-path.js";
 import { readJsonIfExists, writeJson } from "../../infra/json-files.js";
+import { compareSemverStrings } from "../../infra/npm-registry-spec.js";
 import { mergeProcessEnv } from "../../infra/process-env.js";
 import { runtimeProcessEntrypoints } from "../../infra/runtime-process-entrypoints.js";
 import {
@@ -24,7 +25,6 @@ import {
   resolveRuntimeWorkerUrl,
 } from "../../infra/runtime-worker-url.js";
 import type { UpdateChannel } from "../../infra/update-channels.js";
-import { compareSemverStrings } from "../../infra/update-check.js";
 import {
   CONTROL_PLANE_UPDATE_SENTINEL_META_ENV,
   readControlPlaneUpdateSentinelMeta,
@@ -72,7 +72,6 @@ import { withUpdateCommandExecutorChild } from "./update-command-executor.js";
 import type { UpdatePostCoreInput } from "./update-command-migrated-types.js";
 import type { PostCorePluginUpdateResult } from "./update-command-plugins.js";
 import { UpdateCommandRecoveryPendingError } from "./update-command-recovery-error.js";
-import { releaseLegacySourceLock } from "./update-command-runtime.js";
 import { isPackageManagerUpdateMode } from "./update-command-service-command.js";
 import {
   disableUpdatedPackageCompileCacheEnv,
@@ -420,7 +419,6 @@ export async function continuePostCoreUpdateInFreshProcess(params: {
       handoffEnv[CONTROL_PLANE_UPDATE_SENTINEL_META_ENV] = sentinelPath;
     }
     authority.assertCurrent();
-    await releaseLegacySourceLock(params.root, params.opts.run?.sourceArtifactLock);
     const childEnv = {
       ...handoffEnv,
       OPENCLAW_UPDATE_IN_PROGRESS: "1",

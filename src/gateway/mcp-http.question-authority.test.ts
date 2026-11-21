@@ -7,7 +7,6 @@ import {
   buildDefaultTestCliBackend,
   createCliRunnerPrepareFixture,
 } from "../agents/cli-runner.test-helpers.js";
-import { createCliRunCurrentAssertion } from "../agents/cli-runner/execution-target.js";
 import { prepareCliRunContext } from "../agents/cli-runner/prepare.js";
 import {
   resetCliRunnerPrepareTestDeps,
@@ -38,10 +37,9 @@ vi.mock("../plugins/hook-runner-global.js", () => ({ getGlobalHookRunner: () => 
 vi.mock("../agents/node-exec-availability.js", () => ({
   loadNodeExecAvailability: async () => ({ cacheKey: "no-nodes", isAvailable: () => false }),
 }));
-vi.mock("../tts/tts-settings.js", () => ({
-  buildTtsSystemPromptHint: () => undefined,
-  resolveModelOverridePolicy: vi.fn(),
-  setTtsMachinePrefsPathResolver: vi.fn(),
+vi.mock("../tts/tts-settings.js", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("../tts/tts-settings.js")>()),
+  buildTtsSystemPromptHintAsync: async () => undefined,
 }));
 
 const sessionKey = "agent:main:main";
@@ -227,9 +225,8 @@ function createQuestionFixture(
           context.preparedBackend.env?.OPENCLAW_MCP_TOKEN,
           "prepared CLI grant",
         );
-        context.preparedBackend.mcpClientGrantCapture?.activate(
-          captureKey,
-          createCliRunCurrentAssertion(context.params),
+        context.preparedBackend.mcpClientGrantCapture?.activate(captureKey, () =>
+          context.params.abortSignal?.throwIfAborted(),
         );
         expect(resolveGrant(token, runtime.ownerToken)?.isCurrent()).toBe(true);
         return { token, context, source, admission };
@@ -293,7 +290,7 @@ function createQuestionFixture(
 function expectAnswered({ result }: McpResponse) {
   expect(result).toMatchObject({
     isError: false,
-    content: [{ type: "text", text: expect.stringContaining('"status": "answered"') }],
+    content: [{ type: "text", text: expect.stringContaining('"status":"answered"') }],
   });
 }
 

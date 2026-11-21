@@ -30,6 +30,8 @@ installGatewayTestHooks({ scope: "suite" });
 type Delivery = Pick<ChannelOutboundContext, "to" | "text" | "accountId">;
 
 async function checkApprovalForwarding() {
+  const forwardingRuntime = await import("../infra/exec-approval-forwarder.runtime.js");
+  using forwardingSends = vi.spyOn(forwardingRuntime, "sendDurableMessageBatchCore");
   const capturedRuntime = createDeferred<GatewayNativeApprovalRuntime>();
   const deliveries: Delivery[] = [];
   const plugin: ChannelPlugin = {
@@ -147,21 +149,28 @@ async function checkApprovalForwarding() {
         expect(status).toBe("accepted");
         if (forwarded) {
           await vi.waitFor(() => expect(prompts()).not.toHaveLength(0), { timeout: 5_000 });
+          // Destination-history writes can change access while cleanup resolves the approval.
+          await withTestTimeout(
+            Promise.all(forwardingSends.mock.results.map(({ value }) => value)),
+            5_000,
+            "approval delivery did not settle",
+          );
         }
       } finally {
         const resolved = await rpcReq(ws, "plugin.approval.resolve", {
           id,
           decision: "deny",
         });
-        expect(resolved.ok).toBe(true);
-        expect((await waitForGatewayActiveWork(5_000)).drained).toBe(true);
+        expect(resolved.ok, JSON.stringify({ title, resolved })).toBe(true);
+        const drained = await waitForGatewayActiveWork(5_000);
+        expect(drained.drained, JSON.stringify({ title, drained })).toBe(true);
       }
       expect(prompts()).toHaveLength(forwarded ? 1 : 0);
       if (forwarded) {
         expect(prompts()[0]).toMatchObject({
           to: "123",
           text: expect.stringContaining(id),
-          accountId: turnSourceChannel === "telegram" ? "default" : undefined,
+          accountId: turnSourceChannel === "telegram" ? "default" : "ops",
         });
       }
     }

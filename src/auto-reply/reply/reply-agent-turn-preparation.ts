@@ -2,6 +2,7 @@ import crypto from "node:crypto";
 import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
 import { renderAgentHarnessPreflightUserMessage } from "../../agents/embedded-agent-helpers/user-facing-text.js";
 import { normalizeChatType } from "../../channels/chat-type.js";
+import { prepareChildSessionPublication } from "../../channels/message-access/child-session-publication.js";
 import { selectLiveRuntimeConfig } from "../../config/runtime-snapshot.js";
 import { captureRuntimeConfig } from "../../config/runtime-source-projection.js";
 import type { SessionEntry } from "../../config/sessions.js";
@@ -56,6 +57,7 @@ import {
   type FollowupRun,
 } from "./queue/types.js";
 import {
+  admitReplyMaintenance,
   prepareReplySourceAdmission,
   prepareReplySystemPrincipalAuthority,
 } from "./reply-source-admission.js";
@@ -96,18 +98,6 @@ export type AdmittedFollowupTurn = {
   preflightError?: Error;
   releaseSourceAdmission?: () => Promise<void>;
 };
-
-function isSameSessionGeneration(
-  left: SessionEntry | undefined,
-  right: SessionEntry | undefined,
-): boolean {
-  return Boolean(
-    left &&
-    right &&
-    left.sessionId === right.sessionId &&
-    left.lifecycleRevision === right.lifecycleRevision,
-  );
-}
 
 type PrepareReplyAgentTurnParams<TConfigured> = {
   queued: FollowupRun;
@@ -278,7 +268,9 @@ export async function prepareReplyAgentTurn<TConfigured>(
     const admittedSelectionEntry = selectionEntry ? { ...selectionEntry } : undefined;
     // An edit before enqueue can miss the queue refresh; admission owns the saved preference.
     if (kind === "queued_followup" && admission.sessionEntry) {
-      run.cyberAccessProgram = admittedSelectionEntry?.cyberAccessProgram;
+      run.cyberAccessProgram =
+        run.scheduledAutomation?.job.cyberAccessProgram ??
+        admittedSelectionEntry?.cyberAccessProgram;
     }
     let queuedFollowupAdmitted = false;
     let admissionFailed = false;
@@ -462,7 +454,12 @@ export async function prepareReplyAgentTurn<TConfigured>(
         entry: SessionEntry | undefined,
         previousEntry: SessionEntry | undefined,
       ) => {
-        const generationRotated = Boolean(entry && !isSameSessionGeneration(entry, previousEntry));
+        const generationRotated = Boolean(
+          entry &&
+          (!previousEntry ||
+            entry.sessionId !== previousEntry.sessionId ||
+            entry.lifecycleRevision !== previousEntry.lifecycleRevision),
+        );
         if (entry && generationRotated) {
           operation.updateSessionId(entry.sessionId);
           turn.queued = {
@@ -532,6 +529,9 @@ export async function prepareReplyAgentTurn<TConfigured>(
       turn.releaseSourceAdmission = releaseSourceAdmission;
       const preflightEntry = session.current();
       try {
+        // This same once-only preparation also guards runtime admission below.
+        // Check before maintenance can invoke a model for the queued request.
+        await prepareChildSessionPublication(turn.queued.run);
         await params.signalRunStart?.();
         const resolvedVerboseLevel =
           normalizeVerboseLevel(
@@ -569,6 +569,7 @@ export async function prepareReplyAgentTurn<TConfigured>(
               // Compaction decides whether work is needed, then replans from the
               // checkpoint result. A queued source must not bypass this memory write.
               beforeCompaction: async (entry) => {
+                await admitReplyMaintenance(turn, replySessionKey, assertAdmissionCurrent);
                 const flushed = await tracePhase("reply.memory_flush", () =>
                   runMemoryFlushIfNeeded({
                     ...preparation,
