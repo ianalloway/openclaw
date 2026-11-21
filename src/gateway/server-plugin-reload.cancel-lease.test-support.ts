@@ -5,8 +5,10 @@ import {
   withPluginLifecycleLease,
   type PluginLifecycleLeaseContext,
 } from "../plugins/plugin-lifecycle-lease.js";
+import { bindPluginRuntimeArtifactSelection } from "../plugins/plugin-runtime-artifact-binding.js";
 import { createDeferredCore } from "../shared/deferred.js";
 import { observeSettlement } from "./server-plugin-reload.active-call.test-support.js";
+import { observeSettlement as captureSettlement } from "./server-plugin-reload.fixture-tools.test-support.js";
 import type { RecoveryFixtureFactory } from "./server-plugin-reload.recovery.test-support.js";
 
 export async function verifyCancelledDrainRollbackLease(
@@ -87,5 +89,46 @@ export async function verifyCancelledDrainRollbackLease(
     releaseWork();
     await reloading.promise;
     observation.mockRestore();
+  }
+}
+
+export async function verifyCancelledRollbackCapture(
+  createRecoveryFixture: RecoveryFixtureFactory,
+) {
+  const controller = new AbortController();
+  const started = createDeferredCore();
+  const finish = createDeferredCore();
+  const dispose = vi.fn(async () => {});
+  const fixture = await createRecoveryFixture({
+    waitForDrain: true,
+    drainSignal: controller.signal,
+  });
+  const old = fixture.previousRegistry.plugins.find((entry) => entry.id === "first")!;
+  bindPluginRuntimeArtifactSelection(old, { runtimeEntry: { source: "first.js", rootDir: "." } });
+  const instance = fixture.instance();
+  const drain = vi.spyOn(instance, "waitForRetainedWork");
+  const idle = vi.spyOn(instance, "waitForIdle");
+  instance.bindModuleLoaderRecovery(async () => {
+    started.resolve();
+    await finish.promise;
+    return { bind() {}, dispose };
+  });
+  const reloading = captureSettlement(fixture.reload());
+  try {
+    expect(await Promise.race([started.promise, reloading.result])).toBeUndefined();
+    controller.abort(new Error("operator cancelled during rollback capture"));
+    finish.resolve();
+    expect(await reloading.result).toMatchObject({
+      cause: controller.signal.reason,
+      details: { phase: "prepare", committed: false },
+    });
+    expect(dispose).toHaveBeenCalledOnce();
+    expect(drain).not.toHaveBeenCalled();
+    expect(idle).not.toHaveBeenCalled();
+    expect(fixture.firstStop).not.toHaveBeenCalled();
+    expect(instance.run(() => "still live")).toBe("still live");
+  } finally {
+    finish.resolve();
+    await reloading.result;
   }
 }

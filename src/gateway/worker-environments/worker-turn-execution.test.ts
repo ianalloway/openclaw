@@ -56,8 +56,13 @@ import { getWorkerTurnToolSurface } from "./placement-turn-claim-events.js";
 import { WorkerRunnerCapacityError, type WorkerTunnelHandle } from "./tunnel-contract.js";
 import { registerWorkerTurnInferenceTests } from "./worker-turn-execution.inference.suite.js";
 import {
+  unusedTunnel,
+  turnProvider,
+  credentialedProvider,
+  execute,
+} from "./worker-turn-execution.provider.test-support.js";
+import {
   acknowledgeCompletedWorkerTurn,
-  createWorkerTurnTunnel,
   reconcileUnchangedLocalWorkspace,
   credential,
   SESSION_ID,
@@ -101,44 +106,6 @@ function installWorkerMcpTestPolicy(allowSearch = true) {
   setActivePluginRegistry(registry);
 }
 
-function unusedTunnel<T extends Partial<WorkerTunnelHandle>>(overrides: T) {
-  return createWorkerTurnTunnel({
-    runWorkspaceCommand: vi.fn(),
-    syncWorkspace: vi.fn(),
-    reconcileWorkspace: vi.fn(reconcileUnchangedLocalWorkspace),
-    stop: vi.fn(),
-    launchTurn: vi.fn(),
-    ...overrides,
-  });
-}
-
-function turnProvider(
-  environments: Partial<WorkerTurnEnvironmentService>,
-  options: Omit<
-    Parameters<typeof createWorkerSessionTurnPlacementProvider>[0],
-    "placements" | "environments"
-  > = {},
-) {
-  return createWorkerSessionTurnPlacementProvider({
-    placements,
-    environments: { ...unusedEnvironments(), get: attachedEnvironment, ...environments },
-    ...options,
-  });
-}
-
-function credentialedProvider(
-  tunnel: WorkerTunnelHandle,
-  options: Parameters<typeof turnProvider>[1] = {},
-) {
-  return turnProvider(
-    {
-      acquireTurnCredential: async () => credential(),
-      startTunnel: async () => tunnel,
-    },
-    options,
-  );
-}
-
 function preparePolicyRuntime(input: ReturnType<typeof turn>) {
   return acquireAgentRunPreparedModelRuntime({
     config: input.config,
@@ -147,23 +114,6 @@ function preparePolicyRuntime(input: ReturnType<typeof turn>) {
     workspaceDir: input.workspaceDir,
     runtimePluginSelections: [{ provider: input.provider, modelId: input.model }],
   });
-}
-
-type TurnProvider = ReturnType<typeof turnProvider>;
-type ExecuteArgs = Parameters<TurnProvider["executeTurn"]>;
-function execute(
-  provider: TurnProvider,
-  input: ExecuteArgs[1],
-  runLocal: ExecuteArgs[2] = vi.fn(),
-  assertCurrent?: ExecuteArgs[4],
-) {
-  return provider.executeTurn(
-    { ...sessionTarget, runId: input.runId },
-    input,
-    runLocal,
-    undefined,
-    assertCurrent,
-  );
 }
 
 function expectNoCalls(...mocks: unknown[]) {

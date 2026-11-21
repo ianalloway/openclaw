@@ -10,7 +10,6 @@ import type { PluginHookGatewayContext } from "../plugins/hook-gateway.types.js"
 import { createPluginCommandRuntime } from "../plugins/plugin-command-runtime.js";
 import { clearPluginMetadataLifecycleCaches } from "../plugins/plugin-metadata-lifecycle.js";
 import { createPluginMetadataSnapshotFixture } from "../plugins/plugin-metadata.test-support.js";
-import { bindPluginRuntimeArtifactSelection } from "../plugins/plugin-runtime-artifact-binding.js";
 import { clearActivePluginRegistry, resetPluginRuntimeStateForTest } from "../plugins/runtime.js";
 import { withPluginRuntimeRegistryScope } from "../plugins/runtime/gateway-request-scope.js";
 import { cleanupTrackedTempDirs, makeTrackedTempDir } from "../plugins/test-helpers/fs-fixtures.js";
@@ -45,7 +44,10 @@ import {
   verifyAdmittedWorkBudgetIgnoresWallClockStep,
   verifyLateActiveCallDrainObservation,
 } from "./server-plugin-reload.active-call.test-support.js";
-import { verifyCancelledDrainRollbackLease } from "./server-plugin-reload.cancel-lease.test-support.js";
+import {
+  verifyCancelledRollbackCapture,
+  verifyCancelledDrainRollbackLease,
+} from "./server-plugin-reload.cancel-lease.test-support.js";
 import {
   verifyDecisionSelectionIsolation,
   verifyDecisionEarlyReloadRecovery,
@@ -89,8 +91,10 @@ import {
 } from "./server-plugin-reload.resources.test-support.js";
 import { registerPluginServiceRecoveryTests } from "./server-plugin-reload.service-recovery.test-support.js";
 import {
+  transcriptSource,
+  expectWatch,
+  stopTranscripts,
   createTranscriptFixtures,
-  registerTranscriptFixture,
   startTranscriptReloadFixtureSidecars,
 } from "./server-plugin-reload.transcripts.test-support.js";
 
@@ -176,13 +180,7 @@ function createRecoveryFixture(
   return createPluginReloadRecoveryFixture({ cleanups, logMocks: mocks.log }, options);
 }
 
-function transcriptSource(providerId: string, channelId = "original-room") {
-  return { providerId, guildId: "guild", channelId, whenOccupied: true };
-}
-
 type RecoveryFixture = Awaited<ReturnType<typeof createRecoveryFixture>>;
-type TranscriptProvider = ReturnType<typeof registerTranscriptFixture>;
-
 function publicationFailure(outcome: string, failure: Error) {
   const reject = rejectWith(failure);
   return {
@@ -247,25 +245,6 @@ async function createTranscriptRecoveryFixture(
   };
 }
 
-function expectWatch(
-  provider: TranscriptProvider,
-  config: OpenClawConfig,
-  channelId: string,
-  index = -1,
-) {
-  const watch = provider.watches.at(index);
-  expect([watch?.cfg, watch?.source.channelId]).toEqual([config, channelId]);
-}
-
-async function stopTranscripts(
-  sidecars: Awaited<ReturnType<typeof createTranscriptRecoveryFixture>>["sidecars"],
-  sibling: TranscriptProvider,
-) {
-  await sidecars.stop();
-  expect(activeSessions.size).toBe(0);
-  expect(sibling.unwatch).toHaveBeenCalledOnce();
-}
-
 it.each(["gateway_stop", "runtime-lifecycle"] as const)(
   "reopens a shared resource closed by %s after a setting changes without restarting its sibling",
   (cleanup) => verifySharedResourceReplacement(createRecoveryFixture, cleanup),
@@ -276,44 +255,8 @@ it("flushes failed candidate services before closing their shared resources", ()
 
 registerPluginRetainedWorkReloadTests(createRecoveryFixture);
 
-it("settles captured rollback custody but cancels before draining the live plugin", async () => {
-  const controller = new AbortController();
-  const started = createDeferredCore();
-  const finish = createDeferredCore();
-  const dispose = vi.fn(async () => {});
-  const fixture = await createRecoveryFixture({
-    waitForDrain: true,
-    drainSignal: controller.signal,
-  });
-  const old = fixture.previousRegistry.plugins.find((entry) => entry.id === "first")!;
-  bindPluginRuntimeArtifactSelection(old, { runtimeEntry: { source: "first.js", rootDir: "." } });
-  const instance = fixture.instance();
-  const drain = vi.spyOn(instance, "waitForRetainedWork");
-  const idle = vi.spyOn(instance, "waitForIdle");
-  instance.bindModuleLoaderRecovery(async () => {
-    started.resolve();
-    await finish.promise;
-    return { bind() {}, dispose };
-  });
-  const reloading = observeSettlement(fixture.reload());
-  try {
-    expect(await Promise.race([started.promise, reloading.result])).toBeUndefined();
-    controller.abort(new Error("operator cancelled during rollback capture"));
-    finish.resolve();
-    expect(await reloading.result).toMatchObject({
-      cause: controller.signal.reason,
-      details: { phase: "prepare", committed: false },
-    });
-    expect(dispose).toHaveBeenCalledOnce();
-    expect(drain).not.toHaveBeenCalled();
-    expect(idle).not.toHaveBeenCalled();
-    expect(fixture.firstStop).not.toHaveBeenCalled();
-    expect(instance.run(() => "still live")).toBe("still live");
-  } finally {
-    finish.resolve();
-    await reloading.result;
-  }
-});
+it("settles captured rollback custody but cancels before draining the live plugin", () =>
+  verifyCancelledRollbackCapture(createRecoveryFixture));
 
 it.each(["commit", "rollback"] as const)(
   "keeps service and lifecycle Cron getters current after %s",
