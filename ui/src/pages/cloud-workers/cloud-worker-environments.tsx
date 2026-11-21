@@ -1,5 +1,6 @@
 import type { JSX } from "@solidjs/web";
 import {
+  untrack,
   action,
   createMemo,
   createOptimistic,
@@ -278,28 +279,30 @@ export function CloudWorkerEnvironments(props: { machines: () => JSX.Element }) 
           activeLoad = undefined;
           polling.cancel();
           // This native microtask samples settled state once for polling, without subscribing.
-          queueMicrotask(() => {
-            if (!gateway.isCurrent(scope)) {
-              return;
-            }
-            if (refreshAgain) {
-              refreshAgain = false;
-              void load();
-            } else if (
-              view.inventory?.environments.some(
-                (environment) =>
-                  isUnassignedPreparation(environment) &&
-                  ["requested", "provisioning", "bootstrapping", "ready"].includes(
-                    environment.worker?.state ?? "",
-                  ),
-              ) ||
-              view.result?.images.some(
-                (image) => image.capture && image.capture.phase !== "uncertain",
-              )
-            ) {
-              polling.schedule();
-            }
-          });
+          queueMicrotask(() =>
+            untrack(() => {
+              if (!gateway.isCurrent(scope)) {
+                return;
+              }
+              if (refreshAgain) {
+                refreshAgain = false;
+                void load();
+              } else if (
+                view.inventory?.environments.some(
+                  (environment) =>
+                    isUnassignedPreparation(environment) &&
+                    ["requested", "provisioning", "bootstrapping", "ready"].includes(
+                      environment.worker?.state ?? "",
+                    ),
+                ) ||
+                view.result?.images.some(
+                  (image) => image.capture && image.capture.phase !== "uncertain",
+                )
+              ) {
+                polling.schedule();
+              }
+            }),
+          );
         }
       }
     })();
