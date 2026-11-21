@@ -284,6 +284,11 @@ function SessionAttribution(props: SessionHovercardInput) {
     ]
       .filter(Boolean)
       .join(", ");
+  const facepileParticipants = {
+    get staticParticipants() {
+      return remaining();
+    },
+  };
   return (
     <Show when={attribution()}>
       <div class="session-hovercard__attribution" aria-label={attributionLabel()}>
@@ -365,7 +370,7 @@ function SessionAttribution(props: SessionHovercardInput) {
           <Show when={remaining().length > 0}>
             <ViewerFacepile
               registerLink={registerLink}
-              staticParticipants={remaining()}
+              {...facepileParticipants}
               totalCount={otherCount()}
               maxVisible={Math.min(remaining().length, MAX_VISIBLE_ATTRIBUTION_PARTICIPANTS)}
               personActivity={props.personActivity}

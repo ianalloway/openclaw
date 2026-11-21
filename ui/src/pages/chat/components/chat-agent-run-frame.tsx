@@ -85,7 +85,10 @@ function FrameBody(props: FrameBodyProps & { completedFragment: boolean }): JSX.
   return (
     <Show when={props.completedFragment} fallback={<RetainedFrameBody {...props} />}>
       <For each={props.parts} keyed={(part) => `${part.kind}:${part.key}`}>
-        {(part) => props.children(() => ({ part: part(), options: props.options }))}
+        {(part) => {
+          const input = createMemo(() => ({ part: part(), options: props.options }));
+          return <>{props.children(input)}</>;
+        }}
       </For>
     </Show>
   );
@@ -163,7 +166,7 @@ function RetainedFrameBody(props: FrameBodyProps): JSX.Element {
                 before.part === after.part && before.options === after.options,
             },
           );
-          insert(parent, render(readInput), end);
+          untrack(() => insert(parent, render(readInput), end));
           return { dependencies, start, end, write, dispose };
         }),
       );

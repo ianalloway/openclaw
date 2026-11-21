@@ -76,7 +76,7 @@ describe("new session picker focus", () => {
       const view = mountSolid(() => {
         const [open, setOpen] = createSignal(false);
         const { params } = pickerParams(true);
-        vi.spyOn(params.place.browser, "popoverOpen").mockImplementation(() => open());
+        Object.assign(params.place.browser, { popoverOpen: () => open() });
         vi.spyOn(params.place.browser, "popoverCallbacks").mockReturnValue({
           get popoverOpen() {
             return open();

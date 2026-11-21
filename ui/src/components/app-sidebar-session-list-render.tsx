@@ -1,5 +1,5 @@
 import type { JSX } from "@solidjs/web";
-import { createMemo, createSignal, For, Show } from "solid-js";
+import { untrack, createMemo, createSignal, For, Show } from "solid-js";
 import { readPresenceEntries, resolveCurrentSelfUser } from "../app/user-profile.ts";
 import {
   presenceViewerActivity,
@@ -155,30 +155,32 @@ export function renderSessionList(params: {
   catalogRenderer: SessionCatalogGroupsRenderer;
 }) {
   const host = createMemo(() => params.host);
-  return renderSessionListFrame(
-    host,
-    <div class="sidebar-recent-sessions">
-      {renderSessionListBody(params)}
-      <RosterLoadMore
-        host={host()}
-        hasMore={params.nativeSessionsHaveMore}
-        loading={params.nativeSessionsLoading}
-      />
-      {renderPersonalSessionEmpty(
-        host(),
-        params.empty && params.sections.every((section) => section.totalRowCount === 0),
-        host().connected &&
-          host().sessionData.sessionsResult !== null &&
-          !host().sessionData.sessionsLoading &&
-          !host().sessionData.sessionListError &&
-          !params.nativeSessionsHaveMore &&
-          params.catalogs.catalogs.length === 0 &&
-          areSessionCatalogsSettled(host().sessionData),
-      )}
-      {host().sessionsStatusFilter === "archived" && params.empty ? (
-        <span class="sidebar-session-empty-hint">{t("sessionsView.noArchivedSessions")}</span>
-      ) : undefined}
-    </div>,
+  return untrack(() =>
+    renderSessionListFrame(
+      host,
+      <div class="sidebar-recent-sessions">
+        {renderSessionListBody(params)}
+        <RosterLoadMore
+          host={host()}
+          hasMore={params.nativeSessionsHaveMore}
+          loading={params.nativeSessionsLoading}
+        />
+        {renderPersonalSessionEmpty(
+          host(),
+          params.empty && params.sections.every((section) => section.totalRowCount === 0),
+          host().connected &&
+            host().sessionData.sessionsResult !== null &&
+            !host().sessionData.sessionsLoading &&
+            !host().sessionData.sessionListError &&
+            !params.nativeSessionsHaveMore &&
+            params.catalogs.catalogs.length === 0 &&
+            areSessionCatalogsSettled(host().sessionData),
+        )}
+        {host().sessionsStatusFilter === "archived" && params.empty ? (
+          <span class="sidebar-session-empty-hint">{t("sessionsView.noArchivedSessions")}</span>
+        ) : undefined}
+      </div>,
+    ),
   );
 }
 /** Personal pins keep their saved order in one section above every list section. */

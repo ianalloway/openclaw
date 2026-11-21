@@ -1,4 +1,4 @@
-import { createSignal, flush } from "solid-js";
+import { untrack, createSignal, flush } from "solid-js";
 import { afterEach, expect, it, onTestFinished, vi } from "vitest";
 import { mountSolid } from "../../test-helpers/mount-solid.ts";
 import { createIntersectionObserver, createResizeObserver, observeResize } from "./observers.ts";
@@ -39,9 +39,11 @@ it.each([
   const second = document.createElement("div");
   const [targets, setTargets] = createSignal<readonly Element[]>();
   const view = mountSolid(() => {
-    create(
-      () => targets() ?? [first.closest("section") ?? first, second],
-      () => {},
+    untrack(() =>
+      create(
+        () => targets() ?? [first.closest("section") ?? first, second],
+        () => {},
+      ),
     );
     return <div ref={(node) => (first = node)} />;
   });

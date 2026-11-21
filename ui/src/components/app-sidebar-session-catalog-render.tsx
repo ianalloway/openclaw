@@ -1,5 +1,5 @@
 import type { JSX } from "@solidjs/web";
-import { createMemo, For, onSettled, Show } from "solid-js";
+import { untrack, createMemo, For, onSettled, Show } from "solid-js";
 import type {
   SessionCatalog,
   SessionCatalogHost,
@@ -156,7 +156,7 @@ function renderCatalogHostGroup(
         handleContextMenuEvent(
           event,
           event instanceof KeyboardEvent ? (controls.catalogMenu ?? null) : null,
-          (trigger, x, y) => openMenu(x, y, trigger ?? undefined),
+          (trigger, x, y) => untrack(() => openMenu(x, y, trigger ?? undefined)),
         );
       const marqueeLabel = (
         <Show
@@ -294,7 +294,9 @@ function renderCatalogHostGroup(
           })
         }
       >
-        {(session) => renderCatalogSessionRow(session, rowProps.projectChild === true)}
+        {(session) =>
+          untrack(() => renderCatalogSessionRow(session, rowProps.projectChild === true))
+        }
       </For>
     );
   }
@@ -629,7 +631,9 @@ function renderCatalogGroup(
         <>
           <div class="sidebar-recent-sessions__list">
             <For each={readCatalog().visibleHosts} keyed={(host) => host.hostId}>
-              {(host) => renderCatalogHostGroup(readCatalog, host, readLiveRowsByKey, params)}
+              {(host) =>
+                untrack(() => renderCatalogHostGroup(readCatalog, host, readLiveRowsByKey, params))
+              }
             </For>
           </div>
           {hasMore() || retryFresh() ? (

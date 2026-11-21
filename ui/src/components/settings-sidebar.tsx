@@ -248,15 +248,15 @@ function SettingsAgentSelector(props: SettingsSidebarProps & { inHeader?: boolea
   const selectionSource = createMemo(() => props.settingsAgentSelection);
   const identities = createMemo(() => projectOwner(identitySource(), (source) => source.entries()));
   const selection = createMemo(() => projectAgentSelection(selectionSource()));
-  let readIdentityTargets: () => readonly (string | null)[] = () => [
-    selection().read().state.selectedId,
-  ];
+  const identityTargets: { read: () => readonly (string | null)[] } = {
+    read: () => [selection().read().state.selectedId],
+  };
   createEffect(
     () => {
       identities().read();
       return {
         source: identitySource(),
-        ids: [...new Set([selection().read().state.selectedId, ...readIdentityTargets()])],
+        ids: [...new Set([selection().read().state.selectedId, ...identityTargets.read()])],
       };
     },
     ({ source, ids }) => {
@@ -287,9 +287,9 @@ function SettingsAgentSelector(props: SettingsSidebarProps & { inHeader?: boolea
       <openclaw-agent-select
         prop:options={options()}
         prop:identityTargetsRef={(read) => {
-          readIdentityTargets = read;
+          identityTargets.read = read;
         }}
-        prop:onIdentityTargetsChange={() => void identitySource().ensure(readIdentityTargets())}
+        prop:onIdentityTargetsChange={() => void identitySource().ensure(identityTargets.read())}
         prop:identityById={Object.fromEntries(
           identities()
             .read()

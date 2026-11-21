@@ -1,5 +1,5 @@
 import type { JSX } from "@solidjs/web";
-import { createMemo, createSignal, For, lazy, Show, onSettled } from "solid-js";
+import { untrack, createMemo, createSignal, For, lazy, Show, onSettled } from "solid-js";
 import {
   SESSION_ICON_GLYPH_IDS,
   SESSION_ICON_SVG_DATA_URL_PREFIX,
@@ -581,7 +581,7 @@ function renderRailPin(
   const openMenu = (event: MouseEvent | KeyboardEvent) => {
     if (!host.sidebarSnapshot) {
       handleContextMenuEvent(event, trigger ?? pin ?? null, (menuTrigger, x, y) =>
-        host.sidebarMenus.openRailPinMenu(serialized, label(), x, y, menuTrigger),
+        untrack(() => host.sidebarMenus.openRailPinMenu(serialized, label(), x, y, menuTrigger)),
       );
     }
   };

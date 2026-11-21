@@ -32,11 +32,13 @@ async function mount(props: PluginCatalogResultsProps) {
     flush();
   });
   flush();
+  const hasBrowse = Boolean(props.reads.browse);
+  const hasCategories = Boolean(props.reads.categories);
   await waitForSolid(() => {
-    if (!props.reads.browse) {
+    if (!hasBrowse) {
       expect(view.container.querySelector(".plugin-catalog-grid--skeleton")).toBeNull();
     }
-    if (!props.reads.categories) {
+    if (!hasCategories) {
       expect(view.container.querySelector(".plugin-catalog-chip--skeleton")).toBeNull();
     }
   });

@@ -1,5 +1,5 @@
 /* @vitest-environment jsdom */
-import { For, Show, createSignal, flush } from "solid-js";
+import { untrack, For, Show, createSignal, flush } from "solid-js";
 import { expect, it, onTestFinished, vi } from "vitest";
 import { mountSolid } from "../../test-helpers/mount-solid.ts";
 import { restorePropertyDescriptor } from "../../test-helpers/property-descriptor.ts";
@@ -46,7 +46,7 @@ it("retires the last animated content target without another resize or publicati
   });
   const [ids, setIds] = createSignal(["last-process"]);
   vi.spyOn(Element.prototype, "getBoundingClientRect").mockImplementation(function () {
-    return new DOMRect(0, 0, 200, ids().length ? 40 : 0);
+    return new DOMRect(0, 0, 200, untrack(() => ids().length) ? 40 : 0);
   });
   const view = mountSolid(() => {
     const motion = createKeyedListMotion({

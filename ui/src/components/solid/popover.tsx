@@ -76,11 +76,13 @@ export function Popover(props: {
     overlay.bindSurface(surface);
     const disconnectAnchor = anchor.connect();
     const disconnectControl = control.connect(() =>
-      props.ref?.({
-        overlay,
-        show: () => overlay.request(true),
-        hide: () => overlay.request(false),
-      }),
+      untrack(() =>
+        props.ref?.({
+          overlay,
+          show: () => overlay.request(true),
+          hide: () => overlay.request(false),
+        }),
+      ),
     );
     return () => {
       disconnectAnchor();

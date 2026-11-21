@@ -1,4 +1,4 @@
-import { createMemo, onSettled, Show } from "solid-js";
+import { untrack, createMemo, onSettled, Show } from "solid-js";
 import "./chat-attribution.css";
 import { pathForRoute } from "../../../app-route-paths.ts";
 import { registerSessionTitleTarget } from "../../../components/markdown-link-display.ts";
@@ -94,7 +94,7 @@ function sessionTitleRefs(source: () => ForwardedSource) {
 }
 
 function ForwardedSourceLabel(props: { source: ForwardedSource; label: string }) {
-  const refs = sessionTitleRefs(() => props.source);
+  const refs = untrack(() => sessionTitleRefs(() => props.source));
   return (
     <span
       ref={refs.target}

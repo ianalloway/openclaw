@@ -1,4 +1,4 @@
-import { createSignal, flush } from "solid-js";
+import { untrack, createSignal, flush } from "solid-js";
 import { expect, it, vi } from "vitest";
 import type { SecretStoreEntry } from "../../../../packages/gateway-protocol/src/index.js";
 import type { ApplicationContext } from "../../app/context-types.ts";
@@ -134,7 +134,7 @@ it("uses the current system timezone for refreshed inventory timestamps", () => 
       updatedAtMs: Date.UTC(2026, 0, 1, 12),
     };
     const [entries, setEntries] = createSignal([entry]);
-    const container = mount(() => entries());
+    const container = untrack(() => mount(() => entries()));
     const title = () => container.querySelector("time")?.title;
     const expected = (ms: number) =>
       new NativeDateTimeFormat(i18n.getLocale(), {

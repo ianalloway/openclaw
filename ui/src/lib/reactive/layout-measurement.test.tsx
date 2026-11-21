@@ -1,4 +1,4 @@
-import { Show, createSignal, flush } from "solid-js";
+import { untrack, Show, createSignal, flush } from "solid-js";
 import { afterEach, beforeEach, expect, it, onTestFinished, vi } from "vitest";
 import { observeScrollState } from "../../components/scroll-state-observer.ts";
 import { mountSolid } from "../../test-helpers/mount-solid.ts";
@@ -178,7 +178,7 @@ it.each([undefined, "sync"] as const)(
   "keeps %s change timing, current snapshots, and frame-batched resize",
   (changeTiming) => {
     const [width, setWidth] = createSignal(10);
-    const view = mountWidthMeasurement(width, { changeTiming });
+    const view = untrack(() => mountWidthMeasurement(width, { changeTiming }));
     const { element, reads } = view;
     expect(element.style.width).toBe(changeTiming === "sync" ? "10px" : "");
     vi.advanceTimersToNextFrame();
