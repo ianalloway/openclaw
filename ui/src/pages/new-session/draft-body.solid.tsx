@@ -58,10 +58,10 @@ export type NewSessionBodyProps = {
 };
 
 function newSessionAnnouncement(
-  props: Pick<NewSessionBodyProps, "pendingMessage" | "completion" | "statusLabel">,
+  state: Pick<NewSessionBodyProps, "pendingMessage" | "completion" | "statusLabel">,
 ) {
-  return props.pendingMessage
-    ? (props.completion?.label ?? props.statusLabel ?? t("newSession.starting"))
+  return state.pendingMessage
+    ? (state.completion?.label ?? state.statusLabel ?? t("newSession.starting"))
     : undefined;
 }
 

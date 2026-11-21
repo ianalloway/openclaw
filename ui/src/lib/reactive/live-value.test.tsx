@@ -1,7 +1,7 @@
 import { createMemo, createSignal, flush, Show } from "solid-js";
 import { expect, it, vi } from "vitest";
 import { mountSolid } from "../../test-helpers/mount-solid.ts";
-import { liveValue } from "./live-value.ts";
+import { createLiveValueRef } from "./live-value.ts";
 
 it("commits controlled values without untracked reads and preserves input selection", () => {
   const [value, setValue] = createSignal("draft");
@@ -11,7 +11,7 @@ it("commits controlled values without untracked reads and preserves input select
   try {
     function ControlledTextarea() {
       const committedValue = createMemo(value);
-      const valueRef = liveValue(committedValue);
+      const valueRef = createLiveValueRef(committedValue);
       return (
         <Show when={identity()} keyed>
           {(_identity) => <textarea ref={valueRef} />}
@@ -54,11 +54,11 @@ it.each(["late-value", "late-ref"] as const)(
     const [shown, setShown] = createSignal(mode !== "late-ref");
     const view = mountSolid(() => {
       if (mode === "late-ref") {
-        const bind = liveValue(() => entry()!.value);
+        const bind = createLiveValueRef(() => entry()!.value);
         return <Show when={shown()}>{(_shown) => <input ref={bind} />}</Show>;
       }
       return (
-        <Show when={entry()}>{(current) => <input ref={liveValue(() => current().value)} />}</Show>
+        <Show when={entry()}>{(current) => <input ref={createLiveValueRef(() => current().value)} />}</Show>
       );
     });
     expect(view.container.querySelector("input")).toBeNull();

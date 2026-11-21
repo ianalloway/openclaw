@@ -32,7 +32,7 @@ import { formatUiError } from "../../lib/format-error.ts";
 import { formatByteSize, formatDateTimeMs } from "../../lib/format.ts";
 import { useApplication } from "../../lib/reactive/context.ts";
 import { registerEnglishCatalog, t } from "../../lib/reactive/i18n.ts";
-import { liveValue } from "../../lib/reactive/live-value.ts";
+import { createLiveValueRef } from "../../lib/reactive/live-value.ts";
 import { useVisiblePoll } from "../../lib/reactive/visible-poll.ts";
 import { createSettingsStatus } from "./settings-status.ts";
 import { SESSION_STORAGE_SETTINGS_TARGET_ID } from "./settings-targets.ts";
@@ -198,7 +198,7 @@ export function SessionStorageSettings(props: SettingsProps) {
       !currentResult.status.maintenance.running
     );
   }
-  const ageValue = liveValue(() => ageDraft() ?? String(storageConfig().afterDays));
+  const ageValue = createLiveValueRef(() => ageDraft() ?? String(storageConfig().afterDays));
   async function runNow() {
     const currentClient = client();
     const ownsConnection = capture();

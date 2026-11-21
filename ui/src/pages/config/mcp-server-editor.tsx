@@ -7,7 +7,7 @@ import { SettingsRow, SettingsSegmented } from "../../components/solid/settings-
 import { containsRedactedSentinel } from "../../lib/config-form-utils.ts";
 import { MCP_SERVER_NAME_PATTERN, type McpServerSummary } from "../../lib/config/mcp-servers.ts";
 import { t } from "../../lib/reactive/i18n.ts";
-import { liveValue } from "../../lib/reactive/live-value.ts";
+import { createLiveValueRef } from "../../lib/reactive/live-value.ts";
 import { mcpServerFieldNames, mcpServerHints, mcpServerSchema } from "./mcp-schema.ts";
 import { isSensitivePathRevealed, toggleSensitivePathReveal } from "./view-state.ts";
 import type { ConfigProps } from "./view-types.ts";
@@ -99,14 +99,14 @@ export function McpServerEditor(props: {
     !props.config.formValue ||
     props.config.mutationAllowed === false;
   const [renameError, setRenameError] = createSignal("");
-  const nameValue = liveValue<HTMLInputElement>(() => props.server.name);
+  const nameValue = createLiveValueRef<HTMLInputElement>(() => props.server.name);
   const commandText = () => {
     const command = value()?.command;
     return typeof command === "string" ? command : "";
   };
-  const commandValue = liveValue<HTMLInputElement>(commandText);
+  const commandValue = createLiveValueRef<HTMLInputElement>(commandText);
   // One argument per line keeps long paths readable and needs no shell quoting.
-  const argsValue = liveValue<HTMLTextAreaElement>(() => {
+  const argsValue = createLiveValueRef<HTMLTextAreaElement>(() => {
     const args = value()?.args;
     return Array.isArray(args) ? args.join("\n") : "";
   });

@@ -16,7 +16,7 @@ import {
   recordCompositionEnd,
 } from "../../lib/ime.ts";
 import { t } from "../../lib/reactive/i18n.ts";
-import { nativeListener } from "../../lib/solid-native-listener.ts";
+import { createNativeListenerRef } from "../../lib/solid-native-listener.ts";
 
 export type UsageValueOption = {
   value: string;
@@ -91,7 +91,7 @@ export function createUsageValuePicker(config: UsageValuePickerConfig, closeMenu
   });
   const selectedCount = () =>
     config.options().filter((option) => config.isSelected(option.value)).length;
-  const searchKeydown = nativeListener("keydown", (event) => {
+  const searchKeydown = createNativeListenerRef("keydown", (event) => {
     if (event.key !== "Enter") {
       return;
     }

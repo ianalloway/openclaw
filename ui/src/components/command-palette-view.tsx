@@ -17,7 +17,7 @@ import {
   KEYBOARD_SHORTCUT_COMBOS,
   matchesShortcutCombo,
 } from "../lib/keyboard-shortcut-contract.ts";
-import { elementRef } from "../lib/reactive/element-ref.ts";
+import { createElementRef } from "../lib/reactive/element-ref.ts";
 import { t } from "../lib/reactive/i18n.ts";
 import { createParkedProjection } from "../lib/reactive/parked-projection.ts";
 import {
@@ -305,7 +305,7 @@ function PaletteSearch(props: {
               <For each={group()[1]} keyed={(item) => item.id}>
                 {(item) => {
                   const optionRef = (key: string) =>
-                    elementRef<HTMLElement>((element) => {
+                    createElementRef<HTMLElement>((element) => {
                       props.optionElements.set(key, element);
                       return () => props.optionElements.delete(key);
                     });

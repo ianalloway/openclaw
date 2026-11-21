@@ -2,7 +2,7 @@ import { createMemo, createSignal } from "solid-js";
 import { afterEach, assert, describe, expect, it, vi } from "vitest";
 import type { ApplicationGateway } from "../app/gateway.ts";
 import {
-  projectProgressCard,
+  createProgressCardProjection,
   type ProgressCardProjectionSource,
 } from "../lib/reactive/domain-keyed.ts";
 import { sessionProgressCardsForGateway } from "../lib/session-progress-cards.ts";
@@ -15,7 +15,7 @@ import { flush, waitForSolid } from "../test-helpers/solid-settle.ts";
 afterEach(() => vi.restoreAllMocks());
 
 function mountProgress(initialSource: ProgressCardProjectionSource) {
-  let progress!: ReturnType<typeof projectProgressCard>;
+  let progress!: ReturnType<typeof createProgressCardProjection>;
   let replaceSource!: (source: ProgressCardProjectionSource) => void;
   const redraw = vi.fn(
     (snapshot: ReturnType<typeof progress.read>) =>
@@ -24,7 +24,7 @@ function mountProgress(initialSource: ProgressCardProjectionSource) {
   const view = mountSolid(() => {
     const [source, setSource] = createSignal(initialSource);
     replaceSource = setSource;
-    progress = projectProgressCard(() => ({ ...source() }));
+    progress = createProgressCardProjection(() => ({ ...source() }));
     const content = createMemo(() => redraw(progress.read()));
     return <>{content()}</>;
   });

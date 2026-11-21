@@ -17,7 +17,7 @@ export function connectedElementRef<T extends Element>() {
 }
 
 /** Native DOM refs resolve inside a ref array: ref={[elementRef(props.onElement)]}. */
-export function elementRef<T extends Element>(
+export function createElementRef<T extends Element>(
   register: ((element: T) => void | (() => void)) | undefined,
 ): (element: T) => void {
   let release: void | (() => void);
@@ -27,3 +27,5 @@ export function elementRef<T extends Element>(
     release = register?.(element);
   };
 }
+
+export { createElementRef as elementRef };

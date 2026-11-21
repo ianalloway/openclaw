@@ -33,7 +33,7 @@ import {
   isWorkboardSessionChoice,
   type WorkboardProps,
 } from "./view-helpers.tsx";
-import { liveInputValue } from "./view-input-value.ts";
+import { createLiveInputRef } from "./view-input-value.ts";
 import { LabelChoices } from "./view-label-choices.tsx";
 
 const workboardCardModalTitleId = "workboard-card-modal-title";
@@ -168,9 +168,9 @@ function CardModalContent(props: WorkboardProps) {
     draftRevision();
     return state().draftCommentBody;
   };
-  const titleValue = liveInputValue(draftTitle);
-  const notesValue = liveInputValue(() => state().draftNotes);
-  const commentValue = liveInputValue(commentBody);
+  const titleValue = createLiveInputRef(draftTitle);
+  const notesValue = createLiveInputRef(() => state().draftNotes);
+  const commentValue = createLiveInputRef(commentBody);
   const visibleError = () => workboardErrorMessage(state(), props.pageError);
   const sessions = () => props.sessions.filter(isWorkboardSessionChoice);
   const statusOptions = () =>

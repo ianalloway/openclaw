@@ -1,5 +1,5 @@
 import { normalizeLowercaseStringOrEmpty } from "@openclaw/normalization-core/string-coerce";
-import { For, Show, createMemo } from "solid-js";
+import { For, Show, createMemo, merge } from "solid-js";
 import type { extractQueryTerms } from "../../../../src/shared/usage-query.js";
 import { iconButtonClass } from "../../components/solid/icon-button.tsx";
 import { Icon } from "../../components/solid/icon.tsx";
@@ -16,7 +16,7 @@ import {
   recordCompositionEnd,
 } from "../../lib/ime.ts";
 import { t } from "../../lib/reactive/i18n.ts";
-import { nativeListener } from "../../lib/solid-native-listener.ts";
+import { createNativeListenerRef } from "../../lib/solid-native-listener.ts";
 import { applySuggestionToQuery, removeQueryToken, setQueryTokensForKey } from "./query.ts";
 import type { UsageProps } from "./types.ts";
 import { usageCreatorOptions } from "./view-creators.tsx";
@@ -93,15 +93,16 @@ export function createUsageFilterFields(ctx: UsageFilterContext) {
     const selectedSet = createMemo(
       () => new Set(selected().map((value) => normalizeLowercaseStringOrEmpty(value))),
     );
+    const options = createMemo(() =>
+      usageQueryFieldOptions(ctx.filterOptions()[key], ctx.counts(key), selected()),
+    );
     const draft = () => ctx.props.filters.queryDraft;
     return {
       key,
       label: () => t(`usage.filters.${key}`),
       multiple: true,
       optionsReady: () => ctx.props.data.filterOptions !== undefined,
-      options: createMemo(() =>
-        usageQueryFieldOptions(ctx.filterOptions()[key], ctx.counts(key), selected()),
-      ),
+      options,
       selected,
       isSelected: (value) => selectedSet().has(normalizeLowercaseStringOrEmpty(value)),
       searchLabel: () => usageQueryFilterSearchLabel(key),
@@ -158,18 +159,19 @@ export function UsageFilterMenu(props: { model: UsageFilterFields; loading: bool
   const controls = createMenuControls();
   const filters = () => props.model.ctx.props.callbacks.filters;
   let menu: MenuHandle | undefined;
-  const picker = (key: FieldKey) =>
-    createUsageValuePicker({ ...props.model.fields[key], id: `filter-${key}`, controls }, () =>
-      menu?.close(),
+  const createFieldPicker = (key: FieldKey) =>
+    createUsageValuePicker(
+      merge(() => props.model.fields[key], { id: `filter-${key}`, controls }),
+      () => menu?.close(),
     );
   const pickers = {
-    creator: picker("creator"),
-    channel: picker("channel"),
-    provider: picker("provider"),
-    model: picker("model"),
-    tool: picker("tool"),
+    creator: createFieldPicker("creator"),
+    channel: createFieldPicker("channel"),
+    provider: createFieldPicker("provider"),
+    model: createFieldPicker("model"),
+    tool: createFieldPicker("tool"),
   };
-  const queryKeydown = nativeListener("keydown", (event) => {
+  const queryKeydown = createNativeListenerRef("keydown", (event) => {
     if (event.key === "Enter" && !isComposingKeyboardEvent(event)) {
       event.preventDefault();
       event.stopPropagation();
@@ -305,29 +307,43 @@ export function UsageAppliedFilters(props: {
     </button>
   );
   const FieldChip = (chip: { key: FieldKey }) => {
-    const field = props.model.fields[chip.key];
-    const values = () => field.selected();
+    const field = () => props.model.fields[chip.key];
+    const values = () => field().selected();
     const valueLabel = () =>
       values().length > 1
         ? String(values().length)
-        : (field.options().find((option) => option.value === values()[0])?.label ??
+        : (field()
+            .options()
+            .find((option) => option.value === values()[0])?.label ??
           values()[0] ??
           "");
     const names = () =>
       values()
-        .map((value) => field.options().find((option) => option.value === value)?.label ?? value)
+        .map(
+          (value) =>
+            field()
+              .options()
+              .find((option) => option.value === value)?.label ?? value,
+        )
         .join(", ");
     return (
       <span class="usage-filter-chip" title={names()}>
         <UsageValuePicker
-          {...field}
           id={`chip-${chip.key}`}
-          label={`${field.label()}: ${names()}`}
+          options={field().options}
+          optionsReady={field().optionsReady}
+          isSelected={field().isSelected}
+          multiple={field().multiple}
+          searchLabel={field().searchLabel}
+          onToggle={field().onToggle}
+          onClear={field().onClear}
+          onSelectAll={field().onSelectAll}
+          label={`${field().label()}: ${names()}`}
           triggerClass="usage-filter-chip__open"
           placement="bottom-start"
           trigger={
             <>
-              <span class="usage-filter-chip__key">{field.label()}</span>
+              <span class="usage-filter-chip__key">{field().label()}</span>
               <span class="usage-filter-chip__op">
                 {values().length > 1 ? t("usage.filters.isAnyOf") : t("usage.filters.is")}
               </span>
@@ -335,7 +351,7 @@ export function UsageAppliedFilters(props: {
             </>
           }
         />
-        {removeButton(field.label(), field.onClear)}
+        {removeButton(field().label(), field().onClear)}
       </span>
     );
   };

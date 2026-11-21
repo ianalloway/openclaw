@@ -1,7 +1,7 @@
 import { createEffect } from "@solidjs/signals";
 
 /** Apply committed values to native fields while preserving unchanged text selection. */
-export function liveValue<T extends HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>(
+export function createLiveValueRef<T extends HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>(
   value: () => string,
   onValueChange?: (field: T) => void,
 ) {
@@ -24,3 +24,5 @@ export function liveValue<T extends HTMLInputElement | HTMLSelectElement | HTMLT
     }
   };
 }
+
+export { createLiveValueRef as liveValue };

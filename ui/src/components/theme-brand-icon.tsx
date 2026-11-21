@@ -14,8 +14,9 @@ export function ThemeBrandIcon(
     const branding = props.branding ?? currentThemeBranding();
     return branding.artwork?.icons?.[branding.brandIcon];
   };
+  const attributes = omit(props, "branding", "children");
   return (
-    <openclaw-theme-brand-icon {...omit(props, "branding", "children")}>
+    <openclaw-theme-brand-icon {...attributes}>
       <Show when={artwork()} fallback={<Icon name="mark" />}>
         {(icon) => (
           <PluginThemeArtwork url={icon().url} class="brand-icon" fallback={<Icon name="mark" />} />

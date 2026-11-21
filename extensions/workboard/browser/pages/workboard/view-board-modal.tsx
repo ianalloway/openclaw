@@ -21,7 +21,7 @@ import { WorkboardBoardGlyph } from "../../components/workboard-board-glyph.tsx"
 import { t } from "../../i18n/index.ts";
 import { formatUiError } from "../../lib/format-error.ts";
 import type { WorkboardBoardMetadata, WorkboardBoardSummary } from "../../lib/workboard/types.ts";
-import { liveInputValue } from "./view-input-value.ts";
+import { createLiveInputRef } from "./view-input-value.ts";
 
 export type BoardDraft = {
   id: string;
@@ -94,7 +94,7 @@ export function BoardModal(props: {
   onSettled(() => () => {
     disposed = true;
   });
-  const nameValue = liveInputValue(() => draft().name);
+  const nameValue = createLiveInputRef(() => draft().name);
   const persist = async (initialDraft: BoardDraft, client: GatewayBrowserClient) => {
     busy = true;
     const isCurrent = () => !disposed && props.client === client;
@@ -362,9 +362,9 @@ function SessionsEditor(props: {
             void props.revision;
             return column();
           };
-          const labelValue = liveInputValue(() => current().label);
-          const descriptionValue = liveInputValue(() => current().description);
-          const colorValue = liveInputValue(() => current().color ?? "");
+          const labelValue = createLiveInputRef(() => current().label);
+          const descriptionValue = createLiveInputRef(() => current().description);
+          const colorValue = createLiveInputRef(() => current().color ?? "");
           return (
             <div class="workboard-sessions-editor__column" data-column-id={current().id}>
               <label>

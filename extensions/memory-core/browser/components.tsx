@@ -10,7 +10,7 @@ type Section = Parameters<ControlUiSettingsComponents["mountSection"]>[1];
 type Row = Parameters<ControlUiSettingsComponents["mountRow"]>[1];
 
 export function createSettingsComponents(components: ControlUiSettingsComponents) {
-  function bridge<P extends object>(
+  function createSettingsMountRef<P extends object>(
     read: () => P,
     mount: (container: HTMLElement, props: P) => ControlUiComponentHandle<P>,
   ) {
@@ -40,7 +40,7 @@ export function createSettingsComponents(components: ControlUiSettingsComponents
   };
   function SettingsSection(props: { title: string; children?: JSX.Element }) {
     const content = contentNode();
-    const mount = bridge<Section>(() => ({ title: props.title, content }), components.mountSection);
+    const mount = createSettingsMountRef<Section>(() => ({ title: props.title, content }), components.mountSection);
     return (
       <>
         <Portal mount={content}>{props.children}</Portal>
@@ -61,7 +61,7 @@ export function createSettingsComponents(components: ControlUiSettingsComponents
   function SettingsRow(props: { title: string; description?: JSX.Element; control?: JSX.Element }) {
     const description = contentNode();
     const control = contentNode();
-    const mount = bridge<Row>(
+    const mount = createSettingsMountRef<Row>(
       () => ({
         title: props.title,
         description: props.description == null ? undefined : description,
@@ -81,7 +81,7 @@ export function createSettingsComponents(components: ControlUiSettingsComponents
     return (
       <span
         style={{ display: "contents" }}
-        ref={bridge(() => ({ ...props }), components.mountStatus)}
+        ref={createSettingsMountRef(() => ({ ...props }), components.mountStatus)}
       />
     );
   }
@@ -89,7 +89,7 @@ export function createSettingsComponents(components: ControlUiSettingsComponents
     return (
       <span
         style={{ display: "contents" }}
-        ref={bridge(() => ({ ...props }), components.mountValue)}
+        ref={createSettingsMountRef(() => ({ ...props }), components.mountValue)}
       />
     );
   }
@@ -97,7 +97,7 @@ export function createSettingsComponents(components: ControlUiSettingsComponents
     return (
       <span
         style={{ display: "contents" }}
-        ref={bridge(() => ({ ...props }), components.mountNavigation)}
+        ref={createSettingsMountRef(() => ({ ...props }), components.mountNavigation)}
       />
     );
   }
@@ -105,7 +105,7 @@ export function createSettingsComponents(components: ControlUiSettingsComponents
     return (
       <span
         style={{ display: "contents" }}
-        ref={bridge(() => ({ ...props }), components.mountLobster)}
+        ref={createSettingsMountRef(() => ({ ...props }), components.mountLobster)}
       />
     );
   }

@@ -5,7 +5,7 @@ import type { PopoverHandle } from "../../components/solid/popover.tsx";
 import { registerNewSessionSetupEnglish } from "../../i18n/locales/en-new-session-setup.ts";
 import { normalizeAgentTargetLabel } from "../../lib/agents/display.ts";
 import { t } from "../../lib/reactive/i18n.ts";
-import { liveValue } from "../../lib/reactive/live-value.ts";
+import { createLiveValueRef } from "../../lib/reactive/live-value.ts";
 import { normalizeAgentId } from "../../lib/sessions/session-key.ts";
 import * as catalog from "./catalog-target.ts";
 import { CheckoutChip } from "./checkout-chip.tsx";
@@ -138,8 +138,8 @@ export function NewSessionPlaceControls(props: {
       ].filter((element): element is HTMLElement => element?.isConnected === true),
     );
   });
-  const folderValue = liveValue(() => props.params.place.folder);
-  const deviceFolderValue = liveValue(() => props.params.place.deviceFolder?.path ?? "");
+  const folderValue = createLiveValueRef(() => props.params.place.folder);
+  const deviceFolderValue = createLiveValueRef(() => props.params.place.deviceFolder?.path ?? "");
   const view = createMemo(() => {
     const { context, data, gateway, place } = props.params;
     const browser = place.browser;

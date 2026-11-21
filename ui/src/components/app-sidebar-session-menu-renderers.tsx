@@ -39,9 +39,9 @@ import type { MenuEntry, MenuItem } from "./solid/menu.tsx";
 import { Picker } from "./solid/select-picker.tsx";
 import { SettingsSegmented } from "./solid/settings-ui.tsx";
 import {
-  SidebarMenuRadioItem,
-  SidebarOwnerFilter,
-  SidebarOwnerOptions,
+  buildSidebarMenuRadioItem,
+  buildSidebarOwnerFilter,
+  buildSidebarOwnerOptions,
 } from "./solid/sidebar-owner-filter.tsx";
 import { SwitchIndicator } from "./solid/switch.tsx";
 
@@ -222,7 +222,7 @@ export function renderSidebarCatalogViewMenuForMenus(
             icon: <Icon name="arrowLeft" />,
             closeOnSelect: false,
           },
-          ...SidebarOwnerOptions(ownerFilter()),
+          ...buildSidebarOwnerOptions(ownerFilter()),
         ]
       : [
           {
@@ -231,13 +231,13 @@ export function renderSidebarCatalogViewMenuForMenus(
             content: <MenuHeading label={t("sessionsView.groupBy")} />,
           },
           ...groupingOptions().map((option) =>
-            SidebarMenuRadioItem({
+            buildSidebarMenuRadioItem({
               value: `grouping:${option.grouping}`,
               checked: host.catalogProjectGrouping === option.grouping,
               label: option.label,
             }),
           ),
-          ...SidebarOwnerFilter(ownerFilter()),
+          ...buildSidebarOwnerFilter(ownerFilter()),
           {
             kind: "content",
             id: "separator",
