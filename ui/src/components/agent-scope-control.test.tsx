@@ -1,6 +1,6 @@
 /* @vitest-environment jsdom */
 
-import { createSignal, flush } from "solid-js";
+import { createSignal, flush, untrack } from "solid-js";
 import { expect, it, vi } from "vitest";
 import type { GatewayAgentRow } from "../api/types.ts";
 import type { AgentSelectionCapability } from "../app/agent-selection.ts";
@@ -148,11 +148,11 @@ it("skips unchanged scope inputs while keeping roster and selection changes live
   expect(
     select.querySelector('[value="main"] .identity-avatar__text')?.getAttribute("data-avatar"),
   ).toBe("🐙");
-  await update({ agents: [...inputs().agents, { id: "new", name: "New" }] });
+  await update({ agents: [...untrack(() => inputs().agents), { id: "new", name: "New" }] });
   expect(values(select)).toEqual(["historical", "new", "writer", "main"]);
   await update({ selectedId: "selected-history" });
   expect(select.value).toBe("selected-history");
   expect(values(select)).toContain("selected-history");
-  await update({ agents: inputs().agents.filter((agent) => agent.id !== "writer") });
+  await update({ agents: untrack(() => inputs().agents.filter((agent) => agent.id !== "writer")) });
   expect(values(select)).not.toContain("writer");
 });
