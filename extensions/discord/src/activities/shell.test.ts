@@ -140,9 +140,9 @@ it.each(["parent", "popout"] as const)("only delivers messages from the %s RPC w
     listener({ source, data, stopImmediatePropagation } as unknown as MessageEvent);
     expect(stopImmediatePropagation).toHaveBeenCalledOnce();
   }
-  for (const source of [{}, null]) {
+  for (const untrustedSource of [{}, null]) {
     stopImmediatePropagation.mockClear();
-    listener({ source, stopImmediatePropagation } as unknown as MessageEvent);
+    listener({ source: untrustedSource, stopImmediatePropagation } as unknown as MessageEvent);
     expect(stopImmediatePropagation).toHaveBeenCalledOnce();
   }
 });
