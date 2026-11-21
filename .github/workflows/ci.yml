@@ -3289,16 +3289,16 @@ jobs:
                 --reporter verbose --reporter github-actions --reporter ./scripts/lib/vitest-resource-reporter.mts "$@"
             fi
           }
+          # Each case starts Doctor and Gateway subprocesses. Keep two workers
+          # on hosted runners so concurrent startups can meet their own deadlines.
+          startup_workers="$(node -p 'String(Math.min(2, require("node:os").availableParallelism()))')"
           if [[ -n "${OPENCLAW_CI_STARTUP_CORPUS_TEST_FILES_JSON:-}" ]]; then
             # Use the manifest's inventory for both Node receipts and this fallback.
             startup_files_text="$(node -p 'JSON.parse(process.env.OPENCLAW_CI_STARTUP_CORPUS_TEST_FILES_JSON).join(" ")')"
             read -r -a startup_files <<< "$startup_files_text"
-            startup_workers="$(node -p 'String(Math.min(4, require("node:os").availableParallelism()))')"
             run_startup_corpus --maxWorkers="$startup_workers" "${startup_files[@]}"
             exit 0
           elif [[ -f test/vitest/vitest.startup-corpus-paths.mjs ]]; then
-            # Runner labels can advertise more CPUs than this process can use.
-            startup_workers="$(node -p 'String(Math.min(4, require("node:os").availableParallelism()))')"
             run_startup_corpus --maxWorkers="$startup_workers" src/config/config-startup-corpus.test.ts \
               src/config/state-startup-corpus*.test.ts
             exit 0
