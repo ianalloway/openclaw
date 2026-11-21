@@ -57,7 +57,7 @@ export default function PickerWindow<Option extends PickerOption>(props: {
     });
   const virtualizer = new Virtualizer<HTMLDivElement, HTMLDivElement>({
     count: 0,
-    getScrollElement: props.viewport,
+    getScrollElement: () => props.viewport(),
     estimateSize: () => ROW_ESTIMATE,
     gap: rowGap,
     observeElementRect,
@@ -128,12 +128,12 @@ export default function PickerWindow<Option extends PickerOption>(props: {
           : undefined,
       };
     },
-    { region: props.viewport },
+    { region: () => props.viewport() },
   );
   return (
     <div class="picker-select__window" style={{ height: `${height()}px` }}>
       <For each={rows()} keyed={(row) => row.option.value}>
-        {(row) => props.renderRow(row, measureRow)}
+        {(row) => <>{props.renderRow(row, measureRow)}</>}
       </For>
     </div>
   );
